@@ -144,6 +144,12 @@ public:
                                Color color = Color(1.0f, 1.0f, 1.0f, 1.0f));
     virtual void DrawPrimitive(PrimitiveType type, const VertexCol *vertices , int vertexCount);
 
+    virtual BufferId AllocateBuffer(BufferType bufferType, int elementCount);
+    virtual void UpdateGeometryBuffer(BufferId geometryBufferId, VertexNor* data, int elementCount);
+    virtual void UpdateUvMapBuffer(BufferId uvMapBufferId, Math::Point* data, int elementCount);
+    virtual void DrawBuffer(BufferId geometryBufferId, BufferId uvMapBufferId, BufferId secondaryUvMapBufferId, PrimitiveType primitiveType, int vertexCount);
+    virtual void DestroyBuffer(BufferId bufferId);
+
     virtual unsigned int CreateStaticBuffer(PrimitiveType primitiveType, const Vertex* vertices, int vertexCount);
     virtual unsigned int CreateStaticBuffer(PrimitiveType primitiveType, const VertexTex2* vertices, int vertexCount);
     virtual unsigned int CreateStaticBuffer(PrimitiveType primitiveType, const VertexCol* vertices, int vertexCount);

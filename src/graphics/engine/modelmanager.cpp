@@ -5,6 +5,7 @@
 #include "common/logger.h"
 
 #include "graphics/engine/engine.h"
+#include "graphics/engine/model_io.h"
 
 #include <cstdio>
 
@@ -25,14 +26,13 @@ bool CModelManager::LoadModel(const std::string& fileName, bool mirrored)
 {
     GetLogger()->Debug("Loading model '%s'\n", fileName.c_str());
 
-    CModelFile modelFile;
-
-    if (CApplication::GetInstance().IsDebugModeActive(DEBUG_MODELS))
-        modelFile.SetPrintDebugInfo(true);
+    CModelIO::SetPrintDebugInfo(CApplication::GetInstance().IsDebugModeActive(DEBUG_MODELS));
 
     std::string filePath = CApplication::GetInstance().GetDataFilePath(DIR_MODEL, fileName);
 
-    if (!modelFile.ReadModel(filePath))
+    CModel model;
+
+    if (!CModelIO::ReadModel(filePath, model))
     {
         GetLogger()->Error("Loading model '%s' failed\n", filePath.c_str());
         return false;
@@ -40,7 +40,7 @@ bool CModelManager::LoadModel(const std::string& fileName, bool mirrored)
 
     ModelInfo modelInfo;
     modelInfo.baseObjRank = m_engine->CreateBaseObject();
-    modelInfo.triangles = modelFile.GetTriangles();
+    model.GetRawTriangles(modelInfo.triangles);
 
     if (mirrored)
         Mirror(modelInfo.triangles);
@@ -162,7 +162,7 @@ void CModelManager::UnloadAllModels()
     m_models.clear();
 }
 
-void CModelManager::Mirror(std::vector<ModelTriangle>& triangles)
+void CModelManager::Mirror(std::vector<RawModelTriangle>& triangles)
 {
     for (int i = 0; i < static_cast<int>( triangles.size() ); i++)
     {
@@ -180,28 +180,6 @@ void CModelManager::Mirror(std::vector<ModelTriangle>& triangles)
     }
 }
 
-float CModelManager::GetHeight(std::vector<ModelTriangle>& triangles, Math::Vector pos)
-{
-    const float limit = 5.0f;
 
-    for (int i = 0; i < static_cast<int>( triangles.size() ); i++)
-    {
-        if ( fabs(pos.x - triangles[i].p1.coord.x) < limit &&
-             fabs(pos.z - triangles[i].p1.coord.z) < limit )
-            return triangles[i].p1.coord.y;
-
-        if ( fabs(pos.x - triangles[i].p2.coord.x) < limit &&
-             fabs(pos.z - triangles[i].p2.coord.z) < limit )
-            return triangles[i].p2.coord.y;
-
-        if ( fabs(pos.x - triangles[i].p3.coord.x) < limit &&
-             fabs(pos.z - triangles[i].p3.coord.z) < limit )
-            return triangles[i].p3.coord.y;
-    }
-
-    return 0.0f;
-}
-
-
-}
+} // namespace Gfx
 
