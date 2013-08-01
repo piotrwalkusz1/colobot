@@ -19,7 +19,7 @@
 
 #include "app/app.h"
 
-#include "graphics/engine/modelmanager.h"
+#include "graphics/engine/model_manager.h"
 
 #include "physics/physics.h"
 

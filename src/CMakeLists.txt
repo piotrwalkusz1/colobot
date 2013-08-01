@@ -82,7 +82,7 @@ graphics/engine/lightman.cpp
 graphics/engine/lightning.cpp
 graphics/engine/model.cpp
 graphics/engine/model_io.cpp
-graphics/engine/modelmanager.cpp
+graphics/engine/model_manager.cpp
 graphics/engine/particle.cpp
 graphics/engine/planet.cpp
 graphics/engine/pyro.cpp

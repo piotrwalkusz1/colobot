@@ -43,7 +43,7 @@ ${SRC_DIR}/graphics/engine/lightman.cpp
 ${SRC_DIR}/graphics/engine/lightning.cpp
 ${SRC_DIR}/graphics/engine/model.cpp
 ${SRC_DIR}/graphics/engine/model_io.cpp
-${SRC_DIR}/graphics/engine/modelmanager.cpp
+${SRC_DIR}/graphics/engine/model_manager.cpp
 ${SRC_DIR}/graphics/engine/particle.cpp
 ${SRC_DIR}/graphics/engine/planet.cpp
 ${SRC_DIR}/graphics/engine/pyro.cpp

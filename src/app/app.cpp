@@ -27,7 +27,7 @@
 #include "common/key.h"
 #include "common/stringutils.h"
 
-#include "graphics/engine/modelmanager.h"
+#include "graphics/engine/model_manager.h"
 #include "graphics/opengl/gldevice.h"
 
 #include "object/robotmain.h"
