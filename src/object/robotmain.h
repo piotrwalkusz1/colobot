@@ -22,6 +22,8 @@
 #pragma once
 
 
+#include "app/pausemanager.h"
+
 #include "common/global.h"
 #include "common/singleton.h"
 
@@ -30,7 +32,8 @@
 #include "object/object.h"
 #include "object/mainmovie.h"
 
-#include "app/pausemanager.h"
+#include "object/console.h"
+#include "object/cheat.h"
 
 #include <stdio.h>
 
@@ -316,7 +319,6 @@ public:
     char*       GetResume();
     char*       GetScriptName();
     char*       GetScriptFile();
-    bool        GetTrainerPilot();
     bool        GetFixScene();
     bool        GetGlint();
     bool        GetSoluce4();
@@ -417,7 +419,6 @@ protected:
     void        StartDisplayVisit(EventType event);
     void        FrameVisit(float rTime);
     void        StopDisplayVisit();
-    void        ExecuteCmd(char *cmd);
     bool        TestGadgetQuantity(int rank);
     void        UpdateSpeedLabel();
 
@@ -443,6 +444,8 @@ protected:
     Ui::CDisplayInfo*   m_displayInfo;
     CSoundInterface*    m_sound;
     CPauseManager*      m_pause;
+    CConsole*           m_console;
+    CCheat*             m_cheat;
 
     //! Bindings for user inputs
     InputBinding    m_inputBindings[INPUT_SLOT_MAX];
@@ -468,7 +471,6 @@ protected:
     int             m_cameraRank;
     Gfx::Color      m_color;
     bool            m_freePhoto;
-    bool            m_cmdEdit;
     bool            m_showPos;
     bool            m_selectInsect;
     bool            m_showSoluce;
@@ -499,7 +501,6 @@ protected:
     bool            m_editLock;        // edition in progress?
     bool            m_editFull;        // edition in full screen?
     bool            m_hilite;
-    bool            m_trainerPilot;    // remote trainer?
     bool            m_suspend;
     bool            m_friendAim;
     bool            m_resetCreate;

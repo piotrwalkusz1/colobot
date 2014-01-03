@@ -16,48 +16,29 @@
 // * along with this program. If not, see  http://www.gnu.org/licenses/.
 
 /**
- * \file app/pausemanager.h
- * \brief Management of pause modes
+ * \file object/cheat.h
+ * \brief Cheats for cheat console
  */
 #pragma once
 
 #include "common/singleton.h"
 
-#include "sound/sound.h"
+#include "object/console.h"
 
 #include <string>
+#include <vector>
 
-
-enum PauseType {
-    PAUSE_NONE = 0,
-    PAUSE_USER,
-    PAUSE_SATCOM,
-    PAUSE_SATCOMMOVIE,
-    PAUSE_DIALOG,
-    PAUSE_EDITOR,
-    PAUSE_VISIT,
-    PAUSE_CHEAT,
-    PAUSE_PHOTO
-};
-
-class CPauseManager : public CSingleton<CPauseManager>
+class CCheat : public CSingleton<CCheat>
 {
 public:
-    CPauseManager();
-    ~CPauseManager();
-    
-    void SetPause(PauseType pause);
-    void ClearPause();
-    bool GetPause();
-    bool GetPause(PauseType pause);
-    PauseType GetPauseType();
+    CCheat();
+    ~CCheat();
     
 private:
-    std::string GetPauseName(PauseType pause);
-    
-private:
-    CSoundInterface* m_sound;
-    
-    PauseType m_pause;
+    static Error test(std::vector<std::string> params);
+    static Error add_event(std::vector<std::string> params);
+
+public:
+    bool m_trainerPilot;
 };
 

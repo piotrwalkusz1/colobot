@@ -26,6 +26,7 @@
 #include "common/misc.h"
 
 #include "object/object.h"
+#include "object/cheat.h"
 #include "object/task/taskmanip.h"
 #include "object/task/taskflag.h"
 #include "object/task/taskshield.h"
@@ -179,6 +180,7 @@ protected:
     CRobotMain*         m_main;
     Ui::CStudio*        m_studio;
     CSoundInterface*    m_sound;
+    CCheat*             m_cheat;
 
     CTaskManager*       m_primaryTask;
     CTaskManager*       m_secondaryTask;

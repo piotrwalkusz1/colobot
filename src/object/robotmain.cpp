@@ -628,6 +628,8 @@ CRobotMain::CRobotMain(CApplication* app, bool loadProfile)
     m_dialog      = new Ui::CMainDialog();
     m_short       = new Ui::CMainShort();
     m_map         = new Ui::CMainMap();
+    m_console     = new CConsole();
+    m_cheat       = new CCheat();
     m_displayInfo = nullptr;
 
     m_engine->SetTerrain(m_terrain);
@@ -678,7 +680,6 @@ CRobotMain::CRobotMain(CApplication* app, bool loadProfile)
 
     m_cheatRadar   = false;
     m_fixScene     = false;
-    m_trainerPilot = false;
     m_suspend      = false;
     m_friendAim    = false;
     m_resetCreate  = false;
@@ -921,6 +922,12 @@ CRobotMain::~CRobotMain()
 
     delete m_map;
     m_map = nullptr;
+    
+    delete m_cheat;
+    m_cheat = nullptr;
+    
+    delete m_console;
+    m_console = nullptr;
 
     m_app = nullptr;
 }
@@ -1108,6 +1115,11 @@ void CRobotMain::ChangePhase(Phase phase)
     m_editLock    = false;
     m_freePhoto   = false;
     m_resetCreate = false;
+    
+    if(m_phase == PHASE_SIMUL)
+        m_console->SetMode(CONSOLE_GAME);
+    else
+        m_console->SetMode(CONSOLE_MENU);
 
     m_engine->SetMovieLock(m_movieLock);
     ChangePause(PAUSE_NONE);
@@ -1154,14 +1166,7 @@ void CRobotMain::ChangePhase(Phase phase)
     Math::Point dim, pos;
 
     // Creates and hide the command console.
-    dim.x = 200.0f/640.0f;
-    dim.y =  18.0f/480.0f;
-    pos.x =  50.0f/640.0f;
-    pos.y = 452.0f/480.0f;
-    Ui::CEdit* pe = static_cast<Ui::CEdit*>(m_interface->CreateEdit(pos, dim, 0, EVENT_CMD));
-    if (pe == nullptr) return;
-    pe->ClearState(Ui::STATE_VISIBLE);
-    m_cmdEdit = false;  // hidden for now
+    m_console->Create();
 
     // Creates the speedometer.
 /* TODO: #if _TEEN
@@ -1270,7 +1275,7 @@ void CRobotMain::ChangePhase(Phase phase)
 
                 pos.x = ox+sx*3;  pos.y = oy+sy*0.2f;
                 ddim.x = dim.x*15;  ddim.y = dim.y*3.0f;
-                pe = m_interface->CreateEdit(pos, ddim, 0, EVENT_EDIT0);
+                Ui::CEdit* pe = m_interface->CreateEdit(pos, ddim, 0, EVENT_EDIT0);
                 pe->SetGenericMode(true);
                 pe->SetFontType(Gfx::FONT_COLOBOT);
                 pe->SetEditCap(false);
@@ -1409,34 +1414,8 @@ bool CRobotMain::ProcessEvent(Event &event)
     }
 
     // Management of the console.
-    if (m_phase != PHASE_NAME &&
-        !m_movie->IsExist()   &&
-        !m_movieLock && !m_editLock && !m_engine->GetPause() &&
-        event.type == EVENT_KEY_DOWN &&
-        event.key.key == KEY(PAUSE))  // Pause ?
-    {
-        Ui::CEdit* pe = static_cast<Ui::CEdit*>(m_interface->SearchControl(EVENT_CMD));
-        if (pe == nullptr) return false;
-        pe->SetState(Ui::STATE_VISIBLE);
-        pe->SetFocus(true);
-        if (m_phase == PHASE_SIMUL) ChangePause(PAUSE_CHEAT);
-        m_cmdEdit = true;
-        return false;
-    }
-    if (event.type == EVENT_KEY_DOWN &&
-        event.key.key == KEY(RETURN) && m_cmdEdit)
-    {
-        char cmd[50];
-        Ui::CEdit* pe = static_cast<Ui::CEdit*>(m_interface->SearchControl(EVENT_CMD));
-        if (pe == nullptr) return false;
-        pe->GetText(cmd, 50);
-        pe->SetText("");
-        pe->ClearState(Ui::STATE_VISIBLE);
-        if (m_phase == PHASE_SIMUL) ChangePause(PAUSE_NONE);
-        ExecuteCmd(cmd);
-        m_cmdEdit = false;
-        return false;
-    }
+    bool passOn = m_console->ProcessEvent(event);
+    if(!passOn) return false;
 
     // Management of the speed change.
     if (event.type == EVENT_SPEED)
@@ -1553,16 +1532,16 @@ bool CRobotMain::ProcessEvent(Event &event)
                         ChangePhase(PHASE_WIN);
                     else if (m_lostDelay > 0.0f)
                         ChangePhase(PHASE_LOST);
-                    else if (!m_cmdEdit)
+                    else if (!m_console->IsVisible())
                         m_dialog->StartAbort();  // do you want to leave?
                 }
                 if (event.key.key == KEY(PAUSE))
                 {
-                    if (!m_movieLock && !m_editLock && !m_cmdEdit &&
+                    if (!m_movieLock && !m_editLock && !m_console->IsVisible() &&
                         m_camera->GetType() != Gfx::CAM_TYPE_VISIT &&
                         !m_movie->IsExist())
                     {
-                        ChangePause(m_pause->GetPause(PAUSE_USER) ? PAUSE_NONE : PAUSE_USER);
+                        ChangePause(m_pause->GetPause() ? PAUSE_NONE : PAUSE_USER);
                     }
                 }
                 if (event.key.key == GetInputBinding(INPUT_SLOT_CAMERA).primary ||
@@ -1809,336 +1788,6 @@ bool CRobotMain::ProcessEvent(Event &event)
 
 
 
-//! Executes a command
-void CRobotMain::ExecuteCmd(char *cmd)
-{
-    if (cmd[0] == 0) return;
-
-    if (m_phase == PHASE_SIMUL)
-    {
-        if (strcmp(cmd, "winmission") == 0)
-            m_eventQueue->AddEvent(Event(EVENT_WIN));
-
-        if (strcmp(cmd, "lostmission") == 0)
-            m_eventQueue->AddEvent(Event(EVENT_LOST));
-
-        if (strcmp(cmd, "trainerpilot") == 0)
-        {
-            m_trainerPilot = !m_trainerPilot;
-            return;
-        }
-
-        if (strcmp(cmd, "fly") == 0)
-        {
-            g_researchDone |= RESEARCH_FLY;
-
-            m_eventQueue->AddEvent(Event(EVENT_UPDINTERFACE));
-            return;
-        }
-
-        if (strcmp(cmd, "allresearch") == 0)
-        {
-            g_researchDone = -1;  // all research are done
-
-            m_eventQueue->AddEvent(Event(EVENT_UPDINTERFACE));
-            return;
-        }
-
-        if (strcmp(cmd, "allbuildings") == 0)
-        {
-            g_build = -1;  // all buildings are available
-
-            m_eventQueue->AddEvent(Event(EVENT_UPDINTERFACE));
-            return;
-        }
-
-        if (strcmp(cmd, "all") == 0)
-        {
-            g_researchDone = -1;  // all research are done
-            g_build = -1;  // all buildings are available
-
-            m_eventQueue->AddEvent(Event(EVENT_UPDINTERFACE));
-            return;
-        }
-
-        if (strcmp(cmd, "nolimit") == 0)
-        {
-            m_terrain->SetFlyingMaxHeight(280.0f);
-            return;
-        }
-
-        if (strcmp(cmd, "controller") == 0)
-        {
-            if (m_controller != nullptr)
-            {
-                // Don't use SelectObject because it checks if the object is selectable
-                if (m_camera->GetType() == Gfx::CAM_TYPE_VISIT)
-                    StopDisplayVisit();
-
-                CObject* prev = DeselectAll();
-                if (prev != nullptr && prev != m_controller)
-                   m_controller->AddDeselList(prev);
-
-                SelectOneObject(m_controller, true);
-                m_short->UpdateShortcuts();
-            }
-            return;
-        }
-
-        if (strcmp(cmd, "photo1") == 0)
-        {
-            m_freePhoto = !m_freePhoto;
-            if (m_freePhoto)
-            {
-                m_camera->SetType(Gfx::CAM_TYPE_FREE);
-                ChangePause(PAUSE_PHOTO);
-            }
-            else
-            {
-                m_camera->SetType(Gfx::CAM_TYPE_BACK);
-                ChangePause(PAUSE_NONE);
-            }
-            return;
-        }
-
-        if (strcmp(cmd, "photo2") == 0)
-        {
-            m_freePhoto = !m_freePhoto;
-            if (m_freePhoto)
-            {
-                m_camera->SetType(Gfx::CAM_TYPE_FREE);
-                ChangePause(PAUSE_PHOTO);
-                DeselectAll();  // removes the control buttons
-                m_map->ShowMap(false);
-                m_displayText->HideText(true);
-            }
-            else
-            {
-                m_camera->SetType(Gfx::CAM_TYPE_BACK);
-                ChangePause(PAUSE_NONE);
-                m_map->ShowMap(m_mapShow);
-                m_displayText->HideText(false);
-            }
-            return;
-        }
-
-        if (strcmp(cmd, "noclip") == 0)
-        {
-            CObject* object = GetSelect();
-            if (object != nullptr)
-                object->SetClip(false);
-            return;
-        }
-
-        if (strcmp(cmd, "clip") == 0)
-        {
-            CObject* object = GetSelect();
-            if (object != nullptr)
-                object->SetClip(true);
-            return;
-        }
-
-        if (strcmp(cmd, "addhusky") == 0)
-        {
-            CObject* object = GetSelect();
-            if (object != nullptr)
-                object->SetMagnifyDamage(object->GetMagnifyDamage()*0.1f);
-            return;
-        }
-
-        if (strcmp(cmd, "addfreezer") == 0)
-        {
-            CObject* object = GetSelect();
-            if (object != nullptr)
-                object->SetRange(object->GetRange()*10.0f);
-            return;
-        }
-
-        if (strcmp(cmd, "\155\157\157") == 0)
-        {
-            // VGhpcyBpcyBlYXN0ZXItZWdnIGFuZCBzbyBpdCBzaG91bGQgYmUgb2JmdXNjYXRlZCEgRG8gbm90
-            // IGNsZWFuLXVwIHRoaXMgY29kZSEK
-            GetLogger()->Info(" _________________________\n");
-            GetLogger()->Info("< \x50\x6F\x6C\x73\x6B\x69 \x50\x6F\x72\x74\x61\x6C C\x6F\x6C\x6F\x62\x6F\x74\x61! \x3E\n");
-            GetLogger()->Info(" -------------------------\n");
-            GetLogger()->Info("        \x5C\x20\x20\x20\x5E\x5F\x5F\x5E\n");
-            GetLogger()->Info("        \x20\x5C\x20\x20\x28\x6F\x6F\x29\x5C\x5F\x5F\x5F\x5F\x5F\x5F\x5F\n");
-            GetLogger()->Info("            \x28\x5F\x5F\x29\x5C   \x20\x20\x20\x20\x29\x5C\x2F\x5C\n");
-            GetLogger()->Info("            \x20\x20\x20\x20\x7C|\x2D\x2D\x2D\x2D\x77\x20\x7C\n");
-            GetLogger()->Info("          \x20\x20    \x7C\x7C\x20\x20\x20\x20 ||\n");
-        }
-
-        if (strcmp(cmd, "fullpower") == 0)
-        {
-            CObject* object = GetSelect();
-            if (object != nullptr)
-            {
-                CObject* power = object->GetPower();
-                if (power != nullptr)
-                    power->SetEnergy(1.0f);
-
-                object->SetShield(1.0f);
-                CPhysics* physics = object->GetPhysics();
-                if (physics != nullptr)
-                    physics->SetReactorRange(1.0f);
-            }
-            return;
-        }
-
-        if (strcmp(cmd, "fullenergy") == 0)
-        {
-            CObject* object = GetSelect();
-            if (object != nullptr)
-            {
-                CObject* power = object->GetPower();
-                if (power != nullptr)
-                    power->SetEnergy(1.0f);
-            }
-            return;
-        }
-
-        if (strcmp(cmd, "fullshield") == 0)
-        {
-            CObject* object = GetSelect();
-            if (object != nullptr)
-                object->SetShield(1.0f);
-            return;
-        }
-
-        if (strcmp(cmd, "fullrange") == 0)
-        {
-            CObject* object = GetSelect();
-            if (object != nullptr)
-            {
-                CPhysics* physics = object->GetPhysics();
-                if (physics != nullptr)
-                    physics->SetReactorRange(1.0f);
-            }
-            return;
-        }
-    }
-
-    if (strcmp(cmd, "debugmode") == 0)
-    {
-        if (m_app->IsDebugModeActive(DEBUG_ALL))
-        {
-            m_app->SetDebugModeActive(DEBUG_ALL, false);
-        }
-        else
-        {
-            m_app->SetDebugModeActive(DEBUG_ALL, true);
-        }
-        return;
-    }
-
-    if (strcmp(cmd, "showstat") == 0)
-    {
-        m_engine->SetShowStats(!m_engine->GetShowStats());
-        return;
-    }
-
-    if (strcmp(cmd, "invshadow") == 0)
-    {
-        m_engine->SetShadow(!m_engine->GetShadow());
-        return;
-    }
-
-    if (strcmp(cmd, "invdirty") == 0)
-    {
-        m_engine->SetDirty(!m_engine->GetDirty());
-        return;
-    }
-
-    if (strcmp(cmd, "invfog") == 0)
-    {
-        m_engine->SetFog(!m_engine->GetFog());
-        return;
-    }
-
-    if (strcmp(cmd, "invlens") == 0)
-    {
-        m_engine->SetLensMode(!m_engine->GetLensMode());
-        return;
-    }
-
-    if (strcmp(cmd, "invwater") == 0)
-    {
-        m_engine->SetWaterMode(!m_engine->GetWaterMode());
-        return;
-    }
-
-    if (strcmp(cmd, "invsky") == 0)
-    {
-        m_engine->SetSkyMode(!m_engine->GetSkyMode());
-        return;
-    }
-
-    if (strcmp(cmd, "invplanet") == 0)
-    {
-        m_engine->SetPlanetMode(!m_engine->GetPlanetMode());
-        return;
-    }
-
-    if (strcmp(cmd, "showpos") == 0)
-    {
-        m_showPos = !m_showPos;
-        return;
-    }
-
-    if (strcmp(cmd, "selectinsect") == 0)
-    {
-        m_selectInsect = !m_selectInsect;
-        return;
-    }
-
-    if (strcmp(cmd, "showsoluce") == 0)
-    {
-        m_showSoluce = !m_showSoluce;
-        m_dialog->ShowSoluceUpdate();
-        return;
-    }
-
-/* TODO: #if _TEEN
-    if (strcmp(cmd, "allteens") == 0)
-#else*/
-    if (strcmp(cmd, "allmission") == 0)
-    {
-        m_showAll = !m_showAll;
-        m_dialog->AllMissionUpdate();
-        return;
-    }
-
-    if (strcmp(cmd, "invradar") == 0)
-    {
-        m_cheatRadar = !m_cheatRadar;
-        return;
-    }
-
-    if (strcmp(cmd, "speed4") == 0)
-    {
-        SetSpeed(4.0f);
-        UpdateSpeedLabel();
-        return;
-    }
-    if (strcmp(cmd, "speed8") == 0)
-    {
-        SetSpeed(8.0f);
-        UpdateSpeedLabel();
-        return;
-    }
-    if (strcmp(cmd, "crazy") == 0)
-    {
-        SetSpeed(1000.0f);
-        UpdateSpeedLabel();
-        return;
-    }
-
-    if (m_phase == PHASE_SIMUL)
-        m_displayText->DisplayError(ERR_CMD, Math::Vector(0.0f,0.0f,0.0f));
-}
-
-
-
 //! Returns the type of current movie
 MainMovieType CRobotMain::GetMainMovie()
 {
@@ -2162,7 +1811,7 @@ void CRobotMain::FlushDisplayInfo()
 //! index: SATCOM_*
 void CRobotMain::StartDisplayInfo(int index, bool movie)
 {
-    if (m_cmdEdit || m_satComLock || m_lockedSatCom) return;
+    if (m_console->IsVisible() || m_satComLock || m_lockedSatCom) return;
 
     CObject* obj = GetSelect();
     bool human = obj != nullptr && obj->GetType() == OBJECT_HUMAN;
@@ -2195,7 +1844,7 @@ void CRobotMain::StartDisplayInfo(int index, bool movie)
 //! Beginning of the displaying of instructions
 void CRobotMain::StartDisplayInfo(const char *filename, int index)
 {
-    if (m_cmdEdit) return;
+    if (m_console->IsVisible()) return;
 
     m_movieInfoIndex = -1;
     ClearInterface();  // removes setting evidence and tooltip
@@ -2226,7 +1875,7 @@ void CRobotMain::StartDisplayInfo(const char *filename, int index)
 //! End of displaying of instructions
 void CRobotMain::StopDisplayInfo()
 {
-    if (m_cmdEdit) return;
+    if (m_console->IsVisible()) return;
 
     if (m_movieInfoIndex != -1)  // film to read the SatCom?
         m_movie->Start(MM_SATCOMclose, 2.0f);
@@ -3312,7 +2961,7 @@ void CRobotMain::KeyCamera(EventType type, unsigned int key)
 
     if (m_phase != PHASE_SIMUL) return;
     if (m_editLock) return;  // current edition?
-    if (m_trainerPilot) return;
+    if (m_cheat->m_trainerPilot) return;
 
     CObject* obj = GetSelect();
     if (obj == nullptr) return;
@@ -6873,13 +6522,6 @@ bool CRobotMain::IsProhibitedToken(const char* token)
     return true;
 }
 
-
-//! Indicates whether it is possible to control a driving robot
-bool CRobotMain::GetTrainerPilot()
-{
-    return m_trainerPilot;
-}
-
 //! Indicates whether the scene is fixed, without interaction
 bool CRobotMain::GetFixScene()
 {
@@ -7035,6 +6677,15 @@ void CRobotMain::ChangePause(PauseType pause)
         m_pause->SetPause(pause);
     else
         m_pause->ClearPause();
+        
+    if(pause != PAUSE_USER && pause != PAUSE_NONE) {
+        m_console->SetMode(CONSOLE_MENU);
+    } else {
+        if(m_phase == PHASE_SIMUL)
+            m_console->SetMode(CONSOLE_GAME);
+        else
+            m_console->SetMode(CONSOLE_MENU);
+    }
 
     m_sound->MuteAll(m_pause->GetPause());
     CreateShortcuts();

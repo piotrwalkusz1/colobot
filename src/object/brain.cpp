@@ -61,6 +61,8 @@ CBrain::CBrain(CObject* object)
     m_camera      = m_main->GetCamera();
     m_interface   = m_main->GetInterface();
     m_sound       = CApplication::GetInstancePointer()->GetSound();
+    m_cheat       = CCheat::GetInstancePointer();
+    
     m_physics     = nullptr;
     m_motion      = nullptr;
     m_primaryTask = nullptr;
@@ -375,7 +377,7 @@ bool CBrain::EventProcess(const Event &event)
     axeY = event.motionInput.y;
     axeZ = event.motionInput.z;
 
-    if ( !m_main->GetTrainerPilot() &&
+    if ( !m_cheat->m_trainerPilot &&
          m_object->GetTrainer()     )  // drive vehicle?
     {
         axeX = 0.0f;

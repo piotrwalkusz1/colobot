@@ -116,6 +116,8 @@ object/auto/autosafe.cpp
 object/auto/autostation.cpp
 object/auto/autotower.cpp
 object/brain.cpp
+object/cheat.cpp
+object/console.cpp
 object/mainmovie.cpp
 object/motion/motion.cpp
 object/motion/motionant.cpp
