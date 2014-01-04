@@ -669,7 +669,6 @@ CRobotMain::CRobotMain(CApplication* app, bool loadProfile)
     m_hilite       = false;
     m_freePhoto    = false;
     m_showPos      = false;
-    m_selectInsect = false;
     m_showSoluce   = false;
 
     #if DEV_BUILD
@@ -2651,7 +2650,7 @@ bool CRobotMain::IsSelectable(CObject* obj)
         return true;
     }
 
-    if (m_selectInsect)
+    if (m_cheat->m_selectInsect)
     {
         if ( type == OBJECT_MOTHER   ||
              type == OBJECT_ANT      ||

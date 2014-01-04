@@ -24,6 +24,7 @@
 #include "ui/interface.h"
 
 #include <boost/lexical_cast.hpp>
+#include <boost/dynamic_bitset.hpp>
 #include <boost/algorithm/string/join.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
@@ -43,6 +44,9 @@ CConsole::CConsole()
     AddFunction("toggle", toggle);
     AddFunction("list", list);
     AddFunction("alias", alias);
+    AddFunction("bit_or", bit_or);
+    AddFunction("bit_and", bit_and);
+    AddFunction("bit_clear", bit_clear);
 }
 
 CConsole::~CConsole()
@@ -164,6 +168,15 @@ void CConsole::AddVariable(std::string name, int* value)
     CLogger::GetInstancePointer()->Debug("Console: Added variable \"%s\" (int)\n", name.c_str());
 }
 
+void CConsole::AddVariable(std::string name, long* value)
+{
+    ConsoleVariable var;
+    var.type = VARTYPE_LONG;
+    var.value = value;
+    m_variables[name] = var;
+    CLogger::GetInstancePointer()->Debug("Console: Added variable \"%s\" (long)\n", name.c_str());
+}
+
 void CConsole::AddVariable(std::string name, double* value)
 {
     ConsoleVariable var;
@@ -210,12 +223,24 @@ ConsoleVariable CConsole::GetVariable(std::string name)
     return var;
 }
 
-void CConsole::ProcessCommand(std::string input)
+void CConsole::ProcessCommand(std::string input, bool first)
 {
-    CLogger::GetInstancePointer()->Debug("Console: Command \"%s\"\n", input.c_str());
+    if(first)
+        CLogger::GetInstancePointer()->Info("Console: Command \"%s\"\n", input.c_str());
+    else
+        CLogger::GetInstancePointer()->Debug("Console: Command redirected to \"%s\"\n", input.c_str());
+        
+    std::vector<std::string> commands;
+    boost::split(commands, input, boost::is_any_of("&"), boost::token_compress_on);
+    if(commands.size() > 1) {
+        for(auto& cmd : commands) {
+            ProcessCommand(cmd, false);
+        }
+        return;
+    }
 
     std::vector<std::string> command;
-    boost::split(command, input, boost::is_any_of("\t "), boost::token_compress_on);
+    boost::split(command, commands[0], boost::is_any_of(" "), boost::token_compress_on);
     
     for(auto& it : m_functions) {
         if(command[0] == it.first) {
@@ -233,6 +258,7 @@ void CConsole::ProcessCommand(std::string input)
             case VARTYPE_NULL:   CLogger::GetInstancePointer()->Error("Error in console command: tried to assign to NULL\n"); return;
             case VARTYPE_STRING: *(static_cast<std::string*>(var.value)) = boost::algorithm::join(command, " "); return;
             case VARTYPE_INT:    *(static_cast<int*>(var.value))         = boost::lexical_cast<int>(command[0]); return;
+            case VARTYPE_LONG:   *(static_cast<long*>(var.value))        = boost::lexical_cast<long>(command[0]); return;
             case VARTYPE_DOUBLE: *(static_cast<double*>(var.value))      = boost::lexical_cast<double>(command[0]); return;
             case VARTYPE_FLOAT:  *(static_cast<float*>(var.value))       = boost::lexical_cast<float>(command[0]); return;
             case VARTYPE_BOOL:
@@ -247,9 +273,30 @@ void CConsole::ProcessCommand(std::string input)
         }
     }
     
+    for(auto& it : m_variables) {
+        if(command[0] == it.first) {
+            CLogger* log = CLogger::GetInstancePointer();
+            std::string val;
+            switch(it.second.type) {
+                case VARTYPE_STRING: log->Info("%s = %s\n", it.first.c_str(), (*(static_cast<std::string*>(it.second.value))).c_str()); return;
+                case VARTYPE_INT:    log->Info("%s = %d\n", it.first.c_str(), *(static_cast<int*>(it.second.value))); return;
+                case VARTYPE_LONG:   log->Info("%s = %d\n", it.first.c_str(), *(static_cast<long*>(it.second.value))); return;
+                case VARTYPE_DOUBLE: log->Info("%s = %f\n", it.first.c_str(), *(static_cast<double*>(it.second.value))); return;
+                case VARTYPE_FLOAT:  log->Info("%s = %f\n", it.first.c_str(), *(static_cast<float*>(it.second.value))); return;
+                case VARTYPE_BOOL:
+                    if(*(static_cast<bool*>(it.second.value))) val = "true";
+                    else val = "false";
+                    log->Info("%s = %s\n", it.first.c_str(), val.c_str());
+                    return;
+                default:
+                case VARTYPE_NULL:   log->Info("%s = (null)", it.first.c_str()); return;
+            }
+        }
+    }
+    
     for(auto& it : m_aliases) {
         if(command[0] == it.first) {
-            ProcessCommand(it.second);
+            ProcessCommand(it.second, false);
             return;
         }
     }
@@ -290,6 +337,7 @@ Error CConsole::list(std::vector<std::string> params)
             switch(it.second.type) {
                 case VARTYPE_STRING: type = "string"; break;
                 case VARTYPE_INT:    type = "int";    break;
+                case VARTYPE_LONG:   type = "long";   break;
                 case VARTYPE_DOUBLE: type = "double"; break;
                 case VARTYPE_FLOAT:  type = "float";  break;
                 case VARTYPE_BOOL:   type = "bool";   break;
@@ -323,5 +371,76 @@ Error CConsole::alias(std::vector<std::string> params)
     
     CConsole::GetInstancePointer()->AddAlias(name, command);
 
+    return ERR_OK;
+}
+
+Error CConsole::bit_or(std::vector<std::string> params)
+{
+    if(params.size() < 2) {
+        CLogger::GetInstancePointer()->Error("Usage: bit_or [variable] [bitmask]\n");
+        return ERR_CMD;
+    }
+    
+    ConsoleVariable var = CConsole::GetInstancePointer()->GetVariable(params[0]);
+    if(var.type != VARTYPE_INT && var.type != VARTYPE_LONG) {
+        CLogger::GetInstancePointer()->Error("Wrong type of variable - must be int or long\n");
+        return ERR_CMD;
+    }
+    
+    boost::dynamic_bitset<> x(params[1]);
+    long bitmask = x.to_ulong();
+    
+    if(var.type == VARTYPE_INT)
+        *(static_cast<int*>(var.value)) |= bitmask;
+    else
+        *(static_cast<long*>(var.value)) |= bitmask;
+    
+    return ERR_OK;
+}
+
+Error CConsole::bit_and(std::vector<std::string> params)
+{
+    if(params.size() < 2) {
+        CLogger::GetInstancePointer()->Error("Usage: bit_and [variable] [bitmask]\n");
+        return ERR_CMD;
+    }
+    
+    ConsoleVariable var = CConsole::GetInstancePointer()->GetVariable(params[0]);
+    if(var.type != VARTYPE_INT && var.type != VARTYPE_LONG) {
+        CLogger::GetInstancePointer()->Error("Wrong type of variable - must be int or long\n");
+        return ERR_CMD;
+    }
+    
+    boost::dynamic_bitset<> x(params[1]);
+    long bitmask = x.to_ulong();
+    
+    if(var.type == VARTYPE_INT)
+        *(static_cast<int*>(var.value)) &= bitmask;
+    else
+        *(static_cast<long*>(var.value)) &= bitmask;
+    
+    return ERR_OK;
+}
+
+Error CConsole::bit_clear(std::vector<std::string> params)
+{
+    if(params.size() < 2) {
+        CLogger::GetInstancePointer()->Error("Usage: bit_clear [variable] [bitmask]\n");
+        return ERR_CMD;
+    }
+    
+    ConsoleVariable var = CConsole::GetInstancePointer()->GetVariable(params[0]);
+    if(var.type != VARTYPE_INT && var.type != VARTYPE_LONG) {
+        CLogger::GetInstancePointer()->Error("Wrong type of variable - must be int or long\n");
+        return ERR_CMD;
+    }
+    
+    boost::dynamic_bitset<> x(params[1]);
+    long bitmask = x.to_ulong();
+    
+    if(var.type == VARTYPE_INT)
+        *(static_cast<int*>(var.value)) &= (~bitmask);
+    else
+        *(static_cast<long*>(var.value)) &= (~bitmask);
     return ERR_OK;
 }

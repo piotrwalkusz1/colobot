@@ -21,6 +21,8 @@
  */
 #pragma once
 
+#include "app/app.h"
+
 #include "common/singleton.h"
 
 #include "object/console.h"
@@ -35,10 +37,15 @@ public:
     ~CCheat();
     
 private:
+    std::string ToBitmask(long i);
+    std::string ToString(EventType event);
+    
+private:
     static Error test(std::vector<std::string> params);
     static Error add_event(std::vector<std::string> params);
 
 public:
     bool m_trainerPilot;
+    bool m_selectInsect;
 };
 

@@ -44,6 +44,7 @@ enum ConsoleVariableType {
     VARTYPE_NULL = 0,
     VARTYPE_STRING,
     VARTYPE_INT,
+    VARTYPE_LONG,
     VARTYPE_DOUBLE,
     VARTYPE_FLOAT,
     VARTYPE_BOOL
@@ -72,6 +73,7 @@ public:
     void AddFunction(std::string name, Error (*func)(std::vector<std::string> params));
     void AddVariable(std::string name, std::string* var);
     void AddVariable(std::string name, int* var);
+    void AddVariable(std::string name, long* var);
     void AddVariable(std::string name, double* var);
     void AddVariable(std::string name, float* var);
     void AddVariable(std::string name, bool* var);
@@ -80,12 +82,15 @@ public:
     ConsoleVariable GetVariable(std::string name);
     
 private:
-    void ProcessCommand(std::string input);
+    void ProcessCommand(std::string input, bool first=true);
     
 private:
     static Error toggle(std::vector<std::string> params);
     static Error list(std::vector<std::string> params);
     static Error alias(std::vector<std::string> params);
+    static Error bit_or(std::vector<std::string> params);
+    static Error bit_and(std::vector<std::string> params);
+    static Error bit_clear(std::vector<std::string> params);
     
 private:
     Ui::CInterface* m_interface;

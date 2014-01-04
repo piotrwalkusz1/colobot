@@ -23,6 +23,8 @@
 #include "common/image.h"
 #include "common/logger.h"
 
+#include "object/console.h"
+
 #include "graphics/engine/engine.h"
 #include "graphics/engine/water.h"
 
@@ -62,6 +64,11 @@ CTerrain::CTerrain()
 
 CTerrain::~CTerrain()
 {
+}
+
+void CTerrain::RegisterVariables()
+{
+    CConsole::GetInstancePointer()->AddVariable("maxFlyingHeight", &m_flyingMaxHeight);
 }
 
 bool CTerrain::Generate(int mosaicCount, int brickCountPow2, float brickSize,

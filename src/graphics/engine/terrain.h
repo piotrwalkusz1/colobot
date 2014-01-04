@@ -222,6 +222,9 @@ class CTerrain
 public:
     CTerrain();
     ~CTerrain();
+    
+    //! Adds console variables
+    void        RegisterVariables();
 
     //! Generates a new flat terrain
     bool        Generate(int mosaicCount, int brickCountPow2, float brickSize, float vision, int depth, float hardness);

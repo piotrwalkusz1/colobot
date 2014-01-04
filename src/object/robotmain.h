@@ -472,7 +472,6 @@ protected:
     Gfx::Color      m_color;
     bool            m_freePhoto;
     bool            m_showPos;
-    bool            m_selectInsect;
     bool            m_showSoluce;
     bool            m_showAll;
     bool            m_cheatRadar;

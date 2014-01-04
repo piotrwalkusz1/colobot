@@ -205,19 +205,19 @@ enum DataDir
  */
 enum BuildType
 {
-    BUILD_FACTORY       = (1<<0),       //! < factory
-    BUILD_DERRICK       = (1<<1),       //! < derrick
-    BUILD_CONVERT       = (1<<2),       //! < converter
-    BUILD_RADAR         = (1<<3),       //! < radar
-    BUILD_ENERGY        = (1<<4),       //! < factory of cells
-    BUILD_NUCLEAR       = (1<<5),       //! < nuclear power plant
-    BUILD_STATION       = (1<<6),       //! < base station
-    BUILD_REPAIR        = (1<<7),       //! < repair center
-    BUILD_TOWER         = (1<<8),       //! < defense tower
-    BUILD_RESEARCH      = (1<<9),       //! < research center
-    BUILD_LABO          = (1<<10),      //! < laboratory
-    BUILD_PARA          = (1<<11),      //! < lightning protection
-    BUILD_INFO          = (1<<12),      //! < information terminal
+    BUILD_FACTORY       = (1<<0),       //! < BotFactory
+    BUILD_DERRICK       = (1<<1),       //! < Derrick
+    BUILD_CONVERT       = (1<<2),       //! < Converter
+    BUILD_RADAR         = (1<<3),       //! < Radar
+    BUILD_ENERGY        = (1<<4),       //! < PowerPlant
+    BUILD_NUCLEAR       = (1<<5),       //! < NuclearPlant
+    BUILD_STATION       = (1<<6),       //! < PowerStation
+    BUILD_REPAIR        = (1<<7),       //! < RepairCenter
+    BUILD_TOWER         = (1<<8),       //! < DefenseTower
+    BUILD_RESEARCH      = (1<<9),       //! < ResearchCenter
+    BUILD_LABO          = (1<<10),      //! < AutoLab
+    BUILD_PARA          = (1<<11),      //! < PowerCaptor
+    BUILD_INFO          = (1<<12),      //! < ExchangePost
     BUILD_DESTROYER     = (1<<13),      //! < Destroyer
     BUILD_GFLAT         = (1<<16),      //! < flat floor
     BUILD_FLAG          = (1<<17)       //! < puts / removes colored flag
