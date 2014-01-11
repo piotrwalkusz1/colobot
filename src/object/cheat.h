@@ -43,6 +43,7 @@ private:
 private:
     static Error test(std::vector<std::string> params);
     static Error add_event(std::vector<std::string> params);
+    static Error speed(ConsoleVariable var, std::string params);
 
 public:
     bool m_trainerPilot;

@@ -53,6 +53,7 @@ enum ConsoleVariableType {
 struct ConsoleVariable {
     ConsoleVariableType type;
     void* value;
+    Error (*set)(ConsoleVariable, std::string);
 };
 
 class CConsole : public CSingleton<CConsole>
@@ -73,13 +74,15 @@ public:
     static std::string GetVariableTypeAsString(ConsoleVariableType type);
     
     void AddFunction(std::string name, Error (*func)(std::vector<std::string> params));
-    void AddVariable(std::string name, ConsoleVariableType type, void* value);
-    void AddVariable(std::string name, std::string* var);
-    void AddVariable(std::string name, int* var);
-    void AddVariable(std::string name, long* var);
-    void AddVariable(std::string name, double* var);
-    void AddVariable(std::string name, float* var);
-    void AddVariable(std::string name, bool* var);
+    void AddVariable(std::string name, ConsoleVariableType type, void* value, Error (*set_func)(ConsoleVariable, std::string) = nullptr);
+    void AddVariable(std::string name, Error (*set_func)(ConsoleVariable, std::string) = nullptr);
+    void AddVariable(std::string name, std::string* var, Error (*set_func)(ConsoleVariable, std::string) = nullptr);
+    void AddVariable(std::string name, int* var, Error (*set_func)(ConsoleVariable, std::string) = nullptr);
+    void AddVariable(std::string name, long* var, Error (*set_func)(ConsoleVariable, std::string) = nullptr);
+    void AddVariable(std::string name, double* var, Error (*set_func)(ConsoleVariable, std::string) = nullptr);
+    void AddVariable(std::string name, float* var, Error (*set_func)(ConsoleVariable, std::string) = nullptr);
+    void AddVariable(std::string name, bool* var, Error (*set_func)(ConsoleVariable, std::string) = nullptr);
+    void AddVariableSetFunction(std::string, Error (*set_func)(ConsoleVariable, std::string));
     void AddAlias(std::string name, std::string cmd);
     
     ConsoleVariable GetVariable(std::string name);

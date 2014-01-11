@@ -30,6 +30,7 @@
 #include "graphics/engine/modelmanager.h"
 #include "graphics/opengl/gldevice.h"
 
+#include "object/console.h"
 #include "object/robotmain.h"
 
 #ifdef OPENAL_SOUND
@@ -202,6 +203,11 @@ CApplication::~CApplication()
         GetSystemUtils()->DestroyTimeStamp(m_performanceCounters[i][0]);
         GetSystemUtils()->DestroyTimeStamp(m_performanceCounters[i][1]);
     }
+}
+
+void CApplication::RegisterVariables()
+{
+    CConsole::GetInstancePointer()->AddVariable("speed", &m_simulationSpeed);
 }
 
 CEventQueue* CApplication::GetEventQueue()
@@ -704,7 +710,7 @@ bool CApplication::ChangeVideoConfig(const Gfx::GLDeviceConfig &newConfig)
                           std::string(SDL_GetError()) + std::string("\n") +
                           std::string("Previous mode will be restored");
             GetLogger()->Error(error.c_str());
-            GetSystemUtils()->SystemDialog( SDT_ERROR, "COLOBT - Error", error);
+            GetSystemUtils()->SystemDialog( SDT_ERROR, "COLOBOT - Error", error);
 
             restore = true;
             ChangeVideoConfig(m_lastDeviceConfig);
@@ -717,7 +723,7 @@ bool CApplication::ChangeVideoConfig(const Gfx::GLDeviceConfig &newConfig)
             std::string error = std::string("SDL error while restoring previous video mode:\n") +
                           std::string(SDL_GetError());
             GetLogger()->Error(error.c_str());
-            GetSystemUtils()->SystemDialog( SDT_ERROR, "COLOBT - Fatal Error", error);
+            GetSystemUtils()->SystemDialog( SDT_ERROR, "COLOBOT - Fatal Error", error);
 
 
             // Fatal error, so post the quit event

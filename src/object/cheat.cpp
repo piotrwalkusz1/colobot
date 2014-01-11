@@ -21,6 +21,8 @@
 
 #include "common/logger.h"
 
+#include "object/robotmain.h"
+
 #include "graphics/engine/engine.h"
 #include "graphics/engine/terrain.h"
 
@@ -57,6 +59,11 @@ CCheat::CCheat()
     console->AddAlias("selectinsect", "toggle selectInsect");
     
     console->AddAlias("nolimit", "maxFlyingHeight = 280");
+    
+    console->AddVariableSetFunction("speed", speed);
+    console->AddAlias("speed4", "speed = 4");
+    console->AddAlias("speed8", "speed = 8");
+    console->AddAlias("crazy", "speed = 1000");
 }
 
 CCheat::~CCheat()
@@ -88,6 +95,13 @@ Error CCheat::add_event(std::vector<std::string> params)
     }
 
     CApplication::GetInstancePointer()->GetEventQueue()->AddEvent(Event(static_cast<EventType>(boost::lexical_cast<int>(params[0]))));
+    return ERR_OK;
+}
+
+Error CCheat::speed(ConsoleVariable var, std::string params)
+{
+    float value = boost::lexical_cast<float>(params);
+    CRobotMain::GetInstancePointer()->SetSpeed(value);
     return ERR_OK;
 }
 
@@ -332,25 +346,6 @@ if (strcmp(cmd, "allmission") == 0)
 if (strcmp(cmd, "invradar") == 0)
 {
     m_cheatRadar = !m_cheatRadar;
-    return;
-}
-
-if (strcmp(cmd, "speed4") == 0)
-{
-    SetSpeed(4.0f);
-    UpdateSpeedLabel();
-    return;
-}
-if (strcmp(cmd, "speed8") == 0)
-{
-    SetSpeed(8.0f);
-    UpdateSpeedLabel();
-    return;
-}
-if (strcmp(cmd, "crazy") == 0)
-{
-    SetSpeed(1000.0f);
-    UpdateSpeedLabel();
     return;
 }
 

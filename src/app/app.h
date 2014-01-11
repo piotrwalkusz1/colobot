@@ -204,6 +204,8 @@ public:
     CApplication();
     //! Destructor
     ~CApplication();
+    //! Register console variables
+    void RegisterVariables();
 
     //! Returns the application's event queue
     CEventQueue* GetEventQueue();

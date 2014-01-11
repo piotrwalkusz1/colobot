@@ -151,11 +151,12 @@ void CConsole::AddFunction(std::string name, Error (*func)(std::vector<std::stri
     CLogger::GetInstancePointer()->Debug("Console: Added function \"%s\"\n", name.c_str());
 }
 
-void CConsole::AddVariable(std::string name, ConsoleVariableType type, void* value)
+void CConsole::AddVariable(std::string name, ConsoleVariableType type, void* value, Error (*set_func)(ConsoleVariable, std::string))
 {
     ConsoleVariable var;
     var.type = type;
     var.value = value;
+    var.set = set_func;
     if(m_variables.find(name) == m_variables.end()) {
         CLogger::GetInstancePointer()->Debug("Console: Added variable \"%s\" (%s)\n", name.c_str(), GetVariableTypeAsString(type).c_str());
     } else {
@@ -164,34 +165,44 @@ void CConsole::AddVariable(std::string name, ConsoleVariableType type, void* val
     m_variables[name] = var;
 }
 
-void CConsole::AddVariable(std::string name, std::string* value)
+void CConsole::AddVariable(std::string name, Error (*set_func)(ConsoleVariable, std::string))
 {
-    AddVariable(name, VARTYPE_STRING, value);
+    AddVariable(name, VARTYPE_NULL, nullptr, set_func);
 }
 
-void CConsole::AddVariable(std::string name, int* value)
+void CConsole::AddVariable(std::string name, std::string* value, Error (*set_func)(ConsoleVariable, std::string))
 {
-    AddVariable(name, VARTYPE_INT, value);
+    AddVariable(name, VARTYPE_STRING, value, set_func);
 }
 
-void CConsole::AddVariable(std::string name, long* value)
+void CConsole::AddVariable(std::string name, int* value, Error (*set_func)(ConsoleVariable, std::string))
 {
-    AddVariable(name, VARTYPE_LONG, value);
+    AddVariable(name, VARTYPE_INT, value, set_func);
 }
 
-void CConsole::AddVariable(std::string name, double* value)
+void CConsole::AddVariable(std::string name, long* value, Error (*set_func)(ConsoleVariable, std::string))
 {
-    AddVariable(name, VARTYPE_DOUBLE, value);
+    AddVariable(name, VARTYPE_LONG, value, set_func);
 }
 
-void CConsole::AddVariable(std::string name, float* value)
+void CConsole::AddVariable(std::string name, double* value, Error (*set_func)(ConsoleVariable, std::string))
 {
-    AddVariable(name, VARTYPE_FLOAT, value);
+    AddVariable(name, VARTYPE_DOUBLE, value, set_func);
 }
 
-void CConsole::AddVariable(std::string name, bool* value)
+void CConsole::AddVariable(std::string name, float* value, Error (*set_func)(ConsoleVariable, std::string))
 {
-    AddVariable(name, VARTYPE_BOOL, value);
+    AddVariable(name, VARTYPE_FLOAT, value, set_func);
+}
+
+void CConsole::AddVariable(std::string name, bool* value, Error (*set_func)(ConsoleVariable, std::string))
+{
+    AddVariable(name, VARTYPE_BOOL, value, set_func);
+}
+
+void CConsole::AddVariableSetFunction(std::string name, Error (*set_func)(ConsoleVariable, std::string))
+{
+    m_variables[name].set = set_func;
 }
 
 void CConsole::AddAlias(std::string name, std::string code)
@@ -258,22 +269,26 @@ void CConsole::ProcessCommand(std::string input, bool first)
         ConsoleVariable var = GetVariable(command[0]);
         command.erase(command.begin());
         command.erase(command.begin());
-        switch(var.type) {
-            case VARTYPE_NULL:   CLogger::GetInstancePointer()->Error("Error in console command: tried to assign to NULL\n"); return;
-            case VARTYPE_STRING: *(static_cast<std::string*>(var.value)) = boost::algorithm::join(command, " "); return;
-            case VARTYPE_INT:    *(static_cast<int*>(var.value))         = boost::lexical_cast<int>(command[0]); return;
-            case VARTYPE_LONG:   *(static_cast<long*>(var.value))        = boost::lexical_cast<long>(command[0]); return;
-            case VARTYPE_DOUBLE: *(static_cast<double*>(var.value))      = boost::lexical_cast<double>(command[0]); return;
-            case VARTYPE_FLOAT:  *(static_cast<float*>(var.value))       = boost::lexical_cast<float>(command[0]); return;
-            case VARTYPE_BOOL:
-                if(command[0] == "true")
-                    *(static_cast<bool*>(var.value)) = true;
-                else if(command[0] == "false")
-                    *(static_cast<bool*>(var.value)) = false;
-                else
-                    CLogger::GetInstancePointer()->Error("Error in console command: unable to interpret \"%s\" as boolean\n", command[0].c_str());
-                return;
-            default: CLogger::GetInstancePointer()->Error("Error in console command: unknown variable type\n"); return;
+        if(var.set == nullptr) {
+            switch(var.type) {
+                case VARTYPE_NULL:   CLogger::GetInstancePointer()->Error("Error in console command: tried to assign to NULL\n"); return;
+                case VARTYPE_STRING: *(static_cast<std::string*>(var.value)) = boost::algorithm::join(command, " "); return;
+                case VARTYPE_INT:    *(static_cast<int*>(var.value))         = boost::lexical_cast<int>(command[0]); return;
+                case VARTYPE_LONG:   *(static_cast<long*>(var.value))        = boost::lexical_cast<long>(command[0]); return;
+                case VARTYPE_DOUBLE: *(static_cast<double*>(var.value))      = boost::lexical_cast<double>(command[0]); return;
+                case VARTYPE_FLOAT:  *(static_cast<float*>(var.value))       = boost::lexical_cast<float>(command[0]); return;
+                case VARTYPE_BOOL:
+                    if(command[0] == "true")
+                        *(static_cast<bool*>(var.value)) = true;
+                    else if(command[0] == "false")
+                        *(static_cast<bool*>(var.value)) = false;
+                    else
+                        CLogger::GetInstancePointer()->Error("Error in console command: unable to interpret \"%s\" as boolean\n", command[0].c_str());
+                    return;
+                default: CLogger::GetInstancePointer()->Error("Error in console command: unknown variable type\n"); return;
+            }
+        } else {
+            var.set(var, boost::algorithm::join(command, " "));
         }
     }
     
