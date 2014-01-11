@@ -778,6 +778,9 @@ public:
     void            AddStatisticTriangle(int nb);
     //! Returns the number of triangles in current frame
     int             GetStatisticTriangle();
+    
+    //! Sets the coordinates to display in stats window
+    void            SetStatisticPos(Math::Vector pos);
 
 
     /* *************** Object management *************** */
@@ -1349,6 +1352,7 @@ protected:
     float           m_fogStart[2];
     Color           m_waterAddColor;
     int             m_statisticTriangle;
+    Math::Vector    m_statisticPos;
     bool            m_updateGeometry;
     bool            m_updateStaticBuffers;
     int             m_alphaMode;

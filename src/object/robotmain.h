@@ -470,7 +470,6 @@ protected:
     Phase           m_phase;
     int             m_cameraRank;
     Gfx::Color      m_color;
-    bool            m_showPos;
     bool            m_showSoluce;
     bool            m_showAll;
     bool            m_audioRepeat;

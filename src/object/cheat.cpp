@@ -288,12 +288,6 @@ if (strcmp(cmd, "debugmode") == 0)
     return;
 }
 
-if (strcmp(cmd, "showpos") == 0)
-{
-    m_showPos = !m_showPos;
-    return;
-}
-
 if (strcmp(cmd, "showsoluce") == 0)
 {
     m_showSoluce = !m_showSoluce;
