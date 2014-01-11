@@ -23,8 +23,9 @@
 
 #include "ui/interface.h"
 
+#include <bitset>
+
 #include <boost/lexical_cast.hpp>
-#include <boost/dynamic_bitset.hpp>
 #include <boost/algorithm/string/join.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
@@ -150,64 +151,67 @@ void CConsole::AddFunction(std::string name, Error (*func)(std::vector<std::stri
     CLogger::GetInstancePointer()->Debug("Console: Added function \"%s\"\n", name.c_str());
 }
 
-void CConsole::AddVariable(std::string name, std::string* value)
+void CConsole::AddVariable(std::string name, ConsoleVariableType type, void* value)
 {
     ConsoleVariable var;
-    var.type = VARTYPE_STRING;
+    var.type = type;
     var.value = value;
+    if(m_variables.find(name) == m_variables.end()) {
+        CLogger::GetInstancePointer()->Debug("Console: Added variable \"%s\" (%s)\n", name.c_str(), GetVariableTypeAsString(type).c_str());
+    } else {
+        CLogger::GetInstancePointer()->Debug("Console: Updated variable \"%s\" (%s)\n", name.c_str(), GetVariableTypeAsString(type).c_str());
+    }
     m_variables[name] = var;
-    CLogger::GetInstancePointer()->Debug("Console: Added variable \"%s\" (string)\n", name.c_str());
+}
+
+void CConsole::AddVariable(std::string name, std::string* value)
+{
+    AddVariable(name, VARTYPE_STRING, value);
 }
 
 void CConsole::AddVariable(std::string name, int* value)
 {
-    ConsoleVariable var;
-    var.type = VARTYPE_INT;
-    var.value = value;
-    m_variables[name] = var;
-    CLogger::GetInstancePointer()->Debug("Console: Added variable \"%s\" (int)\n", name.c_str());
+    AddVariable(name, VARTYPE_INT, value);
 }
 
 void CConsole::AddVariable(std::string name, long* value)
 {
-    ConsoleVariable var;
-    var.type = VARTYPE_LONG;
-    var.value = value;
-    m_variables[name] = var;
-    CLogger::GetInstancePointer()->Debug("Console: Added variable \"%s\" (long)\n", name.c_str());
+    AddVariable(name, VARTYPE_LONG, value);
 }
 
 void CConsole::AddVariable(std::string name, double* value)
 {
-    ConsoleVariable var;
-    var.type = VARTYPE_DOUBLE;
-    var.value = value;
-    m_variables[name] = var;
-    CLogger::GetInstancePointer()->Debug("Console: Added variable \"%s\" (double)\n", name.c_str());
+    AddVariable(name, VARTYPE_DOUBLE, value);
 }
 
 void CConsole::AddVariable(std::string name, float* value)
 {
-    ConsoleVariable var;
-    var.type = VARTYPE_FLOAT;
-    var.value = value;
-    m_variables[name] = var;
-    CLogger::GetInstancePointer()->Debug("Console: Added variable \"%s\" (float)\n", name.c_str());
+    AddVariable(name, VARTYPE_FLOAT, value);
 }
 
 void CConsole::AddVariable(std::string name, bool* value)
 {
-    ConsoleVariable var;
-    var.type = VARTYPE_BOOL;
-    var.value = value;
-    m_variables[name] = var;
-    CLogger::GetInstancePointer()->Debug("Console: Added variable \"%s\" (bool)\n", name.c_str());
+    AddVariable(name, VARTYPE_BOOL, value);
 }
 
 void CConsole::AddAlias(std::string name, std::string code)
 {
     m_aliases[name] = code;
     CLogger::GetInstancePointer()->Debug("Console: Added alias \"%s\" = \"%s\"\n", name.c_str(), code.c_str());
+}
+
+std::string CConsole::GetVariableTypeAsString(ConsoleVariableType type)
+{
+    switch(type) {
+        case VARTYPE_STRING: return "string";
+        case VARTYPE_INT:    return "int";
+        case VARTYPE_LONG:   return "long";
+        case VARTYPE_DOUBLE: return "double";
+        case VARTYPE_FLOAT:  return "float";
+        case VARTYPE_BOOL:   return "bool";
+        default:
+        case VARTYPE_NULL:   return "null";
+    }
 }
 
 ConsoleVariable CConsole::GetVariable(std::string name)
@@ -333,18 +337,7 @@ Error CConsole::list(std::vector<std::string> params)
     if(params[0] == "variables") {
         CLogger::GetInstancePointer()->Info("Available variables:\n");
         for(auto& it : console->m_variables) {
-            std::string type;
-            switch(it.second.type) {
-                case VARTYPE_STRING: type = "string"; break;
-                case VARTYPE_INT:    type = "int";    break;
-                case VARTYPE_LONG:   type = "long";   break;
-                case VARTYPE_DOUBLE: type = "double"; break;
-                case VARTYPE_FLOAT:  type = "float";  break;
-                case VARTYPE_BOOL:   type = "bool";   break;
-                default:
-                case VARTYPE_NULL:   type = "null";   break;
-            }
-            CLogger::GetInstancePointer()->Info("%s (%s)\n", it.first.c_str(), type.c_str());
+            CLogger::GetInstancePointer()->Info("%s (%s)\n", it.first.c_str(), GetVariableTypeAsString(it.second.type).c_str());
         }
     }
     
@@ -387,7 +380,7 @@ Error CConsole::bit_or(std::vector<std::string> params)
         return ERR_CMD;
     }
     
-    boost::dynamic_bitset<> x(params[1]);
+    std::bitset<sizeof(long)> x(params[1]);
     long bitmask = x.to_ulong();
     
     if(var.type == VARTYPE_INT)
@@ -411,7 +404,7 @@ Error CConsole::bit_and(std::vector<std::string> params)
         return ERR_CMD;
     }
     
-    boost::dynamic_bitset<> x(params[1]);
+    std::bitset<sizeof(long)> x(params[1]);
     long bitmask = x.to_ulong();
     
     if(var.type == VARTYPE_INT)
@@ -435,7 +428,7 @@ Error CConsole::bit_clear(std::vector<std::string> params)
         return ERR_CMD;
     }
     
-    boost::dynamic_bitset<> x(params[1]);
+    std::bitset<sizeof(long)> x(params[1]);
     long bitmask = x.to_ulong();
     
     if(var.type == VARTYPE_INT)

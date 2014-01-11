@@ -70,7 +70,10 @@ public:
     void Toggle();
     bool IsVisible();
     
+    static std::string GetVariableTypeAsString(ConsoleVariableType type);
+    
     void AddFunction(std::string name, Error (*func)(std::vector<std::string> params));
+    void AddVariable(std::string name, ConsoleVariableType type, void* value);
     void AddVariable(std::string name, std::string* var);
     void AddVariable(std::string name, int* var);
     void AddVariable(std::string name, long* var);

@@ -24,9 +24,9 @@
 #include "graphics/engine/engine.h"
 #include "graphics/engine/terrain.h"
 
-#include <boost/lexical_cast.hpp>
-#include <boost/dynamic_bitset.hpp>
+#include <bitset>
 
+#include <boost/lexical_cast.hpp>
 
 template<> CCheat* CSingleton<CCheat>::m_instance = nullptr;
 
@@ -43,7 +43,7 @@ CCheat::CCheat()
     console->AddVariable("build", &g_build);
     console->AddVariable("researchDone", &g_researchDone);
     console->AddVariable("researchEnable", &g_researchEnable);
-    console->AddAlias("fly", "bit_or "+ToBitmask(RESEARCH_FLY)+"&update_interface");
+    console->AddAlias("fly", "bit_or researchDone "+ToBitmask(RESEARCH_FLY)+"&update_interface");
     console->AddAlias("allresearch", "researchDone = -1&update_interface");
     console->AddAlias("allbuildings", "build = -1&update_interface");
     console->AddAlias("all", "allresearch&allbuildings");
@@ -56,7 +56,6 @@ CCheat::CCheat()
     console->AddVariable("selectInsect", &m_selectInsect);
     console->AddAlias("selectinsect", "toggle selectInsect");
     
-    Gfx::CEngine::GetInstancePointer()->GetTerrain()->RegisterVariables();
     console->AddAlias("nolimit", "maxFlyingHeight = 280");
 }
 
@@ -66,10 +65,8 @@ CCheat::~CCheat()
 
 std::string CCheat::ToBitmask(long i)
 {
-    boost::dynamic_bitset<> x(i);
-    std::string out;
-    boost::to_string(x, out);
-    return out;
+    std::bitset<sizeof(long)> x(i);
+    return x.to_string();
 }
 
 std::string CCheat::ToString(EventType event)

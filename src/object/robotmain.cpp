@@ -631,6 +631,8 @@ CRobotMain::CRobotMain(CApplication* app, bool loadProfile)
     m_console     = new CConsole();
     m_cheat       = new CCheat();
     m_displayInfo = nullptr;
+    
+    m_terrain->RegisterVariables();
 
     m_engine->SetTerrain(m_terrain);
     m_filesDir = m_dialog->GetFilesDir();
