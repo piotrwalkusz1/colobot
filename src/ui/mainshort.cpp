@@ -22,6 +22,8 @@
 
 #include "common/iman.h"
 
+#include "object/cheat.h"
+
 
 namespace Ui {
 
@@ -121,7 +123,7 @@ bool CMainShort::CreateShortcuts()
         m_interface->CreateShortcut(pos, dim, 7, EVENT_OBJECT_MOVIELOCK);
         return true;
     }
-    if ( !m_main->GetFreePhoto() &&
+    if ( !CCheat::GetInstancePointer()->m_freePhoto &&
          (m_main->GetEditLock() ||
           m_engine->GetPause()) )  // hangs during edition?
     {

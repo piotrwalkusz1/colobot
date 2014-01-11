@@ -245,6 +245,21 @@ void CConsole::ProcessCommand(std::string input, bool first)
     else
         CLogger::GetInstancePointer()->Debug("Console: Command redirected to \"%s\"\n", input.c_str());
         
+    if (input == "\155\157\157")
+    {
+        // VGhpcyBpcyBlYXN0ZXItZWdnIGFuZCBzbyBpdCBzaG91bGQgYmUgb2JmdXNjYXRlZCEgRG8gbm90
+        // IGNsZWFuLXVwIHRoaXMgY29kZSEK
+        GetLogger()->Info(" _________________________\n");
+        GetLogger()->Info("< \x50\x6F\x6C\x73\x6B\x69 \x50\x6F\x72\x74\x61\x6C C\x6F\x6C\x6F\x62\x6F\x74\x61! \x3E\n");
+        GetLogger()->Info(" -------------------------\n");
+        GetLogger()->Info("        \x5C\x20\x20\x20\x5E\x5F\x5F\x5E\n");
+        GetLogger()->Info("        \x20\x5C\x20\x20\x28\x6F\x6F\x29\x5C\x5F\x5F\x5F\x5F\x5F\x5F\x5F\n");
+        GetLogger()->Info("            \x28\x5F\x5F\x29\x5C   \x20\x20\x20\x20\x29\x5C\x2F\x5C\n");
+        GetLogger()->Info("            \x20\x20\x20\x20\x7C|\x2D\x2D\x2D\x2D\x77\x20\x7C\n");
+        GetLogger()->Info("          \x20\x20    \x7C\x7C\x20\x20\x20\x20 ||\n");
+        return;
+    }
+        
     std::vector<std::string> commands;
     boost::split(commands, input, boost::is_any_of("&"), boost::token_compress_on);
     if(commands.size() > 1) {

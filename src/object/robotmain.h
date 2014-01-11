@@ -206,6 +206,7 @@ public:
     Gfx::CTerrain* GetTerrain();
     Ui::CInterface* GetInterface();
     Ui::CDisplayText* GetDisplayText();
+    Ui::CMainMap* GetMap();
 
     //! Caused the given mission to be loaded immediately after start
     void        LoadSceneOnStart(const std::string& name, int rank);
@@ -251,7 +252,6 @@ public:
     bool        GetEditLock();
     void        SetEditFull(bool full);
     bool        GetEditFull();
-    bool        GetFreePhoto();
     void        SetFriendAim(bool friendAim);
     bool        GetFriendAim();
 
@@ -470,7 +470,6 @@ protected:
     Phase           m_phase;
     int             m_cameraRank;
     Gfx::Color      m_color;
-    bool            m_freePhoto;
     bool            m_showPos;
     bool            m_showSoluce;
     bool            m_showAll;

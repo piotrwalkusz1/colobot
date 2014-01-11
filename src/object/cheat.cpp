@@ -18,13 +18,18 @@
 #include "object/cheat.h"
 
 #include "app/app.h"
+#include "app/pausemanager.h"
 
 #include "common/logger.h"
 
 #include "object/robotmain.h"
 
+#include "graphics/engine/camera.h"
 #include "graphics/engine/engine.h"
 #include "graphics/engine/terrain.h"
+
+#include "ui/displaytext.h"
+#include "ui/mainmap.h"
 
 #include <bitset>
 
@@ -64,6 +69,10 @@ CCheat::CCheat()
     console->AddAlias("speed4", "speed = 4");
     console->AddAlias("speed8", "speed = 8");
     console->AddAlias("crazy", "speed = 1000");
+    
+    console->AddFunction("photo", photo);
+    console->AddAlias("photo1", "photo false");
+    console->AddAlias("photo2", "photo true");
 }
 
 CCheat::~CCheat()
@@ -105,6 +114,50 @@ Error CCheat::speed(ConsoleVariable var, std::string params)
     return ERR_OK;
 }
 
+Error CCheat::photo(std::vector<std::string> params)
+{
+    if(params.size() < 1) {
+        CLogger::GetInstancePointer()->Error("Usage: photo [removeControls]\n");
+        return ERR_CMD;
+    }
+    
+    bool removeControls;
+    if(params[0] == "true") removeControls = true;
+    else if(params[0] == "false") removeControls = false;
+    else {
+        CLogger::GetInstancePointer()->Error("Usage: photo [removeControls]\n");
+        CLogger::GetInstancePointer()->Error("removeControls must be true/false\n");
+        return ERR_CMD;
+    }
+    
+    CCheat* cheat = CCheat::GetInstancePointer();
+    CRobotMain* robotmain = CRobotMain::GetInstancePointer();
+    CPauseManager* pause = CPauseManager::GetInstancePointer();
+    
+    cheat->m_freePhoto = !cheat->m_freePhoto;
+    if (cheat->m_freePhoto)
+    {
+        robotmain->GetCamera()->SetType(Gfx::CAM_TYPE_FREE);
+        pause->SetPause(PAUSE_PHOTO);
+        if(removeControls) {
+            robotmain->DeselectAll();  // removes the control buttons
+            robotmain->GetMap()->ShowMap(false);
+            robotmain->GetDisplayText()->HideText(true);
+        }
+    }
+    else
+    {
+        robotmain->GetCamera()->SetType(Gfx::CAM_TYPE_BACK);
+        pause->ClearPause();
+        if(removeControls) {
+            robotmain->GetMap()->ShowMap(robotmain->GetShowMap());
+            robotmain->GetDisplayText()->HideText(false);
+        }
+    }
+    
+    return ERR_OK;
+}
+
 /*if (m_phase == PHASE_SIMUL)
 {
 
@@ -122,43 +175,6 @@ Error CCheat::speed(ConsoleVariable var, std::string params)
 
             SelectOneObject(m_controller, true);
             m_short->UpdateShortcuts();
-        }
-        return;
-    }
-
-    if (strcmp(cmd, "photo1") == 0)
-    {
-        m_freePhoto = !m_freePhoto;
-        if (m_freePhoto)
-        {
-            m_camera->SetType(Gfx::CAM_TYPE_FREE);
-            ChangePause(PAUSE_PHOTO);
-        }
-        else
-        {
-            m_camera->SetType(Gfx::CAM_TYPE_BACK);
-            ChangePause(PAUSE_NONE);
-        }
-        return;
-    }
-
-    if (strcmp(cmd, "photo2") == 0)
-    {
-        m_freePhoto = !m_freePhoto;
-        if (m_freePhoto)
-        {
-            m_camera->SetType(Gfx::CAM_TYPE_FREE);
-            ChangePause(PAUSE_PHOTO);
-            DeselectAll();  // removes the control buttons
-            m_map->ShowMap(false);
-            m_displayText->HideText(true);
-        }
-        else
-        {
-            m_camera->SetType(Gfx::CAM_TYPE_BACK);
-            ChangePause(PAUSE_NONE);
-            m_map->ShowMap(m_mapShow);
-            m_displayText->HideText(false);
         }
         return;
     }
@@ -193,20 +209,6 @@ Error CCheat::speed(ConsoleVariable var, std::string params)
         if (object != nullptr)
             object->SetRange(object->GetRange()*10.0f);
         return;
-    }
-
-    if (strcmp(cmd, "\155\157\157") == 0)
-    {
-        // VGhpcyBpcyBlYXN0ZXItZWdnIGFuZCBzbyBpdCBzaG91bGQgYmUgb2JmdXNjYXRlZCEgRG8gbm90
-        // IGNsZWFuLXVwIHRoaXMgY29kZSEK
-        GetLogger()->Info(" _________________________\n");
-        GetLogger()->Info("< \x50\x6F\x6C\x73\x6B\x69 \x50\x6F\x72\x74\x61\x6C C\x6F\x6C\x6F\x62\x6F\x74\x61! \x3E\n");
-        GetLogger()->Info(" -------------------------\n");
-        GetLogger()->Info("        \x5C\x20\x20\x20\x5E\x5F\x5F\x5E\n");
-        GetLogger()->Info("        \x20\x5C\x20\x20\x28\x6F\x6F\x29\x5C\x5F\x5F\x5F\x5F\x5F\x5F\x5F\n");
-        GetLogger()->Info("            \x28\x5F\x5F\x29\x5C   \x20\x20\x20\x20\x29\x5C\x2F\x5C\n");
-        GetLogger()->Info("            \x20\x20\x20\x20\x7C|\x2D\x2D\x2D\x2D\x77\x20\x7C\n");
-        GetLogger()->Info("          \x20\x20    \x7C\x7C\x20\x20\x20\x20 ||\n");
     }
 
     if (strcmp(cmd, "fullpower") == 0)

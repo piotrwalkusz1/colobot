@@ -670,7 +670,6 @@ CRobotMain::CRobotMain(CApplication* app, bool loadProfile)
     m_editLock     = false;
     m_editFull     = false;
     m_hilite       = false;
-    m_freePhoto    = false;
     m_showPos      = false;
     m_showSoluce   = false;
 
@@ -954,6 +953,11 @@ Ui::CDisplayText* CRobotMain::GetDisplayText()
     return m_displayText;
 }
 
+Ui::CMainMap* CRobotMain::GetMap()
+{
+    return m_map;
+}
+
 void CRobotMain::LoadSceneOnStart(const std::string& name, int rank)
 {
     m_exitAfterMission = true;
@@ -1115,7 +1119,7 @@ void CRobotMain::ChangePhase(Phase phase)
     m_movieLock   = false;
     m_satComLock  = false;
     m_editLock    = false;
-    m_freePhoto   = false;
+    m_cheat->m_freePhoto = false;
     m_resetCreate = false;
     
     if(m_phase == PHASE_SIMUL)
@@ -3095,7 +3099,7 @@ bool CRobotMain::EventFrame(const Event &event)
     CInstanceManager* iMan = CInstanceManager::GetInstancePointer();
 
     CObject* toto = nullptr;
-    if (!m_freePhoto)
+    if (!m_cheat->m_freePhoto)
     {
         // Advances all the robots, but not toto.
         for (int i = 0; i < 1000000; i++)
@@ -3269,7 +3273,7 @@ bool CRobotMain::EventFrame(const Event &event)
 //! Makes the event for all robots
 bool CRobotMain::EventObject(const Event &event)
 {
-    if (m_freePhoto) return true;
+    if (m_cheat->m_freePhoto) return true;
 
     m_resetCreate = false;
 
@@ -6822,12 +6826,6 @@ void CRobotMain::SetEditFull(bool full)
 bool CRobotMain::GetEditFull()
 {
     return m_editFull;
-}
-
-
-bool CRobotMain::GetFreePhoto()
-{
-    return m_freePhoto;
 }
 
 
