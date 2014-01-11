@@ -684,6 +684,9 @@ class CEngine : public CSingleton<CEngine>
 public:
     CEngine(CApplication* app);
     ~CEngine();
+    
+    //! Register console variables
+    void            RegisterVariables();
 
     //! Sets the device to be used
     void            SetDevice(CDevice* device);

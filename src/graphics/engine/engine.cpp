@@ -36,6 +36,8 @@
 #include "graphics/engine/text.h"
 #include "graphics/engine/water.h"
 
+#include "object/console.h"
+
 #include "math/geometry.h"
 
 #include "sound/sound.h"
@@ -185,6 +187,19 @@ CEngine::~CEngine()
     m_lastFrameTime = nullptr;
     GetSystemUtils()->DestroyTimeStamp(m_currentFrameTime);
     m_currentFrameTime = nullptr;
+}
+
+void CEngine::RegisterVariables()
+{
+    CConsole* console = CConsole::GetInstancePointer();
+    console->AddVariable("showStat", &m_showStats);
+    console->AddVariable("shadows", &m_shadowVisible);
+    console->AddVariable("dirty", &m_dirty);
+    console->AddVariable("fog", &m_fog);
+    console->AddVariable("lens", &m_lensMode);
+    console->AddVariable("water", &m_waterMode);
+    console->AddVariable("sky", &m_skyMode);
+    console->AddVariable("planet", &m_planetMode);
 }
 
 void CEngine::SetDevice(CDevice *device)

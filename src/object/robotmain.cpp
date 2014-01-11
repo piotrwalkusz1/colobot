@@ -633,6 +633,7 @@ CRobotMain::CRobotMain(CApplication* app, bool loadProfile)
     
     m_terrain->RegisterVariables();
     m_app->RegisterVariables();
+    m_engine->RegisterVariables();
     m_cheat       = new CCheat();
 
     m_engine->SetTerrain(m_terrain);
@@ -679,7 +680,6 @@ CRobotMain::CRobotMain(CApplication* app, bool loadProfile)
     m_showAll      = false;
     #endif
 
-    m_cheatRadar   = false;
     m_fixScene     = false;
     m_suspend      = false;
     m_friendAim    = false;
@@ -6599,7 +6599,7 @@ bool CRobotMain::GetShowAll()
 
 bool CRobotMain::GetRadar()
 {
-    if (m_cheatRadar)
+    if (m_cheat->m_cheatRadar)
         return true;
 
     CInstanceManager* iMan = CInstanceManager::GetInstancePointer();

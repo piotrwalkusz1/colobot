@@ -50,5 +50,6 @@ public:
     bool m_trainerPilot;
     bool m_selectInsect;
     bool m_freePhoto;
+    bool m_cheatRadar;
 };
 

@@ -70,9 +70,23 @@ CCheat::CCheat()
     console->AddAlias("speed8", "speed = 8");
     console->AddAlias("crazy", "speed = 1000");
     
+    m_freePhoto = false;
     console->AddFunction("photo", photo);
     console->AddAlias("photo1", "photo false");
     console->AddAlias("photo2", "photo true");
+    
+    m_cheatRadar = false;
+    console->AddVariable("cheatRadar", &m_cheatRadar);
+    console->AddAlias("invradar", "toggle cheatRadar");
+    
+    console->AddAlias("showstat", "toggle showStats");
+    console->AddAlias("invshadow", "toggle shadows");
+    console->AddAlias("invdirty", "toggle dirty");
+    console->AddAlias("invfog", "toggle fog");
+    console->AddAlias("invlens", "toggle lens");
+    console->AddAlias("invwater", "toggle water");
+    console->AddAlias("invsky", "toggle sky");
+    console->AddAlias("invplanet", "toggle planet");
 }
 
 CCheat::~CCheat()
@@ -274,54 +288,6 @@ if (strcmp(cmd, "debugmode") == 0)
     return;
 }
 
-if (strcmp(cmd, "showstat") == 0)
-{
-    m_engine->SetShowStats(!m_engine->GetShowStats());
-    return;
-}
-
-if (strcmp(cmd, "invshadow") == 0)
-{
-    m_engine->SetShadow(!m_engine->GetShadow());
-    return;
-}
-
-if (strcmp(cmd, "invdirty") == 0)
-{
-    m_engine->SetDirty(!m_engine->GetDirty());
-    return;
-}
-
-if (strcmp(cmd, "invfog") == 0)
-{
-    m_engine->SetFog(!m_engine->GetFog());
-    return;
-}
-
-if (strcmp(cmd, "invlens") == 0)
-{
-    m_engine->SetLensMode(!m_engine->GetLensMode());
-    return;
-}
-
-if (strcmp(cmd, "invwater") == 0)
-{
-    m_engine->SetWaterMode(!m_engine->GetWaterMode());
-    return;
-}
-
-if (strcmp(cmd, "invsky") == 0)
-{
-    m_engine->SetSkyMode(!m_engine->GetSkyMode());
-    return;
-}
-
-if (strcmp(cmd, "invplanet") == 0)
-{
-    m_engine->SetPlanetMode(!m_engine->GetPlanetMode());
-    return;
-}
-
 if (strcmp(cmd, "showpos") == 0)
 {
     m_showPos = !m_showPos;
@@ -342,12 +308,6 @@ if (strcmp(cmd, "allmission") == 0)
 {
     m_showAll = !m_showAll;
     m_dialog->AllMissionUpdate();
-    return;
-}
-
-if (strcmp(cmd, "invradar") == 0)
-{
-    m_cheatRadar = !m_cheatRadar;
     return;
 }
 

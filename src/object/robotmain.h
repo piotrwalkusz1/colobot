@@ -473,7 +473,6 @@ protected:
     bool            m_showPos;
     bool            m_showSoluce;
     bool            m_showAll;
-    bool            m_cheatRadar;
     bool            m_audioRepeat;
     bool            m_shortCut;
     std::string     m_audioTrack;
