@@ -156,6 +156,8 @@ void CConsole::AddVariable(std::string name, ConsoleVariableType type, void* val
     ConsoleVariable var;
     var.type = type;
     var.value = value;
+    var.set = nullptr;
+    var.get = nullptr;
     CLogger::GetInstancePointer()->Debug("Console: %s variable \"%s\" (%s)\n", (m_variables.find(name) == m_variables.end() ? "Added" : "Updated"), name.c_str(), GetVariableTypeAsString(type).c_str());
     m_variables[name] = var;
 }
