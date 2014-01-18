@@ -151,58 +151,63 @@ void CConsole::AddFunction(std::string name, Error (*func)(std::vector<std::stri
     CLogger::GetInstancePointer()->Debug("Console: Added function \"%s\"\n", name.c_str());
 }
 
-void CConsole::AddVariable(std::string name, ConsoleVariableType type, void* value, Error (*set_func)(ConsoleVariable, std::string))
+void CConsole::AddVariable(std::string name, ConsoleVariableType type, void* value)
 {
     ConsoleVariable var;
     var.type = type;
     var.value = value;
-    var.set = set_func;
-    if(m_variables.find(name) == m_variables.end()) {
-        CLogger::GetInstancePointer()->Debug("Console: Added variable \"%s\" (%s)\n", name.c_str(), GetVariableTypeAsString(type).c_str());
-    } else {
-        CLogger::GetInstancePointer()->Debug("Console: Updated variable \"%s\" (%s)\n", name.c_str(), GetVariableTypeAsString(type).c_str());
-    }
+    CLogger::GetInstancePointer()->Debug("Console: %s variable \"%s\" (%s)\n", (m_variables.find(name) == m_variables.end() ? "Added" : "Updated"), name.c_str(), GetVariableTypeAsString(type).c_str());
     m_variables[name] = var;
 }
 
-void CConsole::AddVariable(std::string name, Error (*set_func)(ConsoleVariable, std::string))
+void CConsole::AddVariable(std::string name)
 {
-    AddVariable(name, VARTYPE_NULL, nullptr, set_func);
+    AddVariable(name, VARTYPE_NULL, nullptr);
 }
 
-void CConsole::AddVariable(std::string name, std::string* value, Error (*set_func)(ConsoleVariable, std::string))
+void CConsole::AddVariable(std::string name, std::string* value)
 {
-    AddVariable(name, VARTYPE_STRING, value, set_func);
+    AddVariable(name, VARTYPE_STRING, value);
 }
 
-void CConsole::AddVariable(std::string name, int* value, Error (*set_func)(ConsoleVariable, std::string))
+void CConsole::AddVariable(std::string name, int* value)
 {
-    AddVariable(name, VARTYPE_INT, value, set_func);
+    AddVariable(name, VARTYPE_INT, value);
 }
 
-void CConsole::AddVariable(std::string name, long* value, Error (*set_func)(ConsoleVariable, std::string))
+void CConsole::AddVariable(std::string name, long* value)
 {
-    AddVariable(name, VARTYPE_LONG, value, set_func);
+    AddVariable(name, VARTYPE_LONG, value);
 }
 
-void CConsole::AddVariable(std::string name, double* value, Error (*set_func)(ConsoleVariable, std::string))
+void CConsole::AddVariable(std::string name, double* value)
 {
-    AddVariable(name, VARTYPE_DOUBLE, value, set_func);
+    AddVariable(name, VARTYPE_DOUBLE, value);
 }
 
-void CConsole::AddVariable(std::string name, float* value, Error (*set_func)(ConsoleVariable, std::string))
+void CConsole::AddVariable(std::string name, float* value)
 {
-    AddVariable(name, VARTYPE_FLOAT, value, set_func);
+    AddVariable(name, VARTYPE_FLOAT, value);
 }
 
-void CConsole::AddVariable(std::string name, bool* value, Error (*set_func)(ConsoleVariable, std::string))
+void CConsole::AddVariable(std::string name, bool* value)
 {
-    AddVariable(name, VARTYPE_BOOL, value, set_func);
+    AddVariable(name, VARTYPE_BOOL, value);
+}
+
+void CConsole::AddVariable(std::string name, CObject* value)
+{
+    AddVariable(name, VARTYPE_OBJECT, value);
 }
 
 void CConsole::AddVariableSetFunction(std::string name, Error (*set_func)(ConsoleVariable, std::string))
 {
     m_variables[name].set = set_func;
+}
+
+void CConsole::AddVariableGetFunction(std::string name, Error (*get_func)(ConsoleVariable*))
+{
+    m_variables[name].get = get_func;
 }
 
 void CConsole::AddAlias(std::string name, std::string code)
@@ -220,6 +225,7 @@ std::string CConsole::GetVariableTypeAsString(ConsoleVariableType type)
         case VARTYPE_DOUBLE: return "double";
         case VARTYPE_FLOAT:  return "float";
         case VARTYPE_BOOL:   return "bool";
+        case VARTYPE_OBJECT: return "CObject";
         default:
         case VARTYPE_NULL:   return "null";
     }
@@ -229,6 +235,7 @@ ConsoleVariable CConsole::GetVariable(std::string name)
 {
     for(auto& it : m_variables) {
         if(name == it.first) {
+            if(it.second.get != nullptr) it.second.get(&(it.second));
             return it.second;
         }
     }
@@ -284,6 +291,45 @@ void CConsole::ProcessCommand(std::string input, bool first)
         ConsoleVariable var = GetVariable(command[0]);
         command.erase(command.begin());
         command.erase(command.begin());
+        
+        ConsoleVariable var2 = GetVariable(command[0]);
+        if(var2.type != VARTYPE_NULL) {
+            if(var2.type != var.type) {
+                CLogger::GetInstancePointer()->Error("Variable types don't match\n");
+                return;
+            }
+            
+            if(var.set == nullptr) {
+                switch(var.type) {
+                    case VARTYPE_STRING: *(static_cast<std::string*>(var.value)) = *(static_cast<std::string*>(var2.value)); return;
+                    case VARTYPE_INT:    *(static_cast<int*>(var.value))         = *(static_cast<int*>(var2.value)); return;
+                    case VARTYPE_LONG:   *(static_cast<long*>(var.value))        = *(static_cast<long*>(var2.value)); return;
+                    case VARTYPE_DOUBLE: *(static_cast<double*>(var.value))      = *(static_cast<double*>(var2.value)); return;
+                    case VARTYPE_FLOAT:  *(static_cast<float*>(var.value))       = *(static_cast<float*>(var2.value)); return;
+                    case VARTYPE_BOOL:   *(static_cast<bool*>(var.value))        = *(static_cast<bool*>(var2.value)); return;
+                    case VARTYPE_OBJECT: var.value                               = var2.value; return;
+                    default: CLogger::GetInstancePointer()->Error("Error in console command: unknown variable type\n"); return;
+                }
+            } else {
+                switch(var.type) {
+                    case VARTYPE_STRING: var.set(var, *(static_cast<std::string*>(var2.value))); return;
+                    case VARTYPE_INT:    var.set(var, boost::lexical_cast<std::string>(*(static_cast<int*>(var2.value)))); return;
+                    case VARTYPE_LONG:   var.set(var, boost::lexical_cast<std::string>(*(static_cast<long*>(var2.value)))); return;
+                    case VARTYPE_DOUBLE: var.set(var, boost::lexical_cast<std::string>(*(static_cast<double*>(var2.value)))); return;
+                    case VARTYPE_FLOAT:  var.set(var, boost::lexical_cast<std::string>(*(static_cast<float*>(var2.value)))); return;
+                    case VARTYPE_BOOL:
+                        if(*(static_cast<bool*>(var2.value)))
+                            var.set(var, "true");
+                        else
+                            var.set(var, "false");
+                        return;
+                    case VARTYPE_OBJECT: CLogger::GetInstancePointer()->Error("You can't assign a value to CObject\n"); return;
+                    default: CLogger::GetInstancePointer()->Error("Error in console command: unknown variable type\n"); return;
+                }
+            }
+        }
+        
+        
         if(var.set == nullptr) {
             switch(var.type) {
                 case VARTYPE_NULL:   CLogger::GetInstancePointer()->Error("Error in console command: tried to assign to NULL\n"); return;
@@ -300,10 +346,12 @@ void CConsole::ProcessCommand(std::string input, bool first)
                     else
                         CLogger::GetInstancePointer()->Error("Error in console command: unable to interpret \"%s\" as boolean\n", command[0].c_str());
                     return;
+                case VARTYPE_OBJECT: CLogger::GetInstancePointer()->Error("You can't assign a value to CObject\n"); return;
                 default: CLogger::GetInstancePointer()->Error("Error in console command: unknown variable type\n"); return;
             }
         } else {
             var.set(var, boost::algorithm::join(command, " "));
+            return;
         }
     }
     
@@ -311,19 +359,25 @@ void CConsole::ProcessCommand(std::string input, bool first)
         if(command[0] == it.first) {
             CLogger* log = CLogger::GetInstancePointer();
             std::string val;
-            switch(it.second.type) {
-                case VARTYPE_STRING: log->Info("%s = %s\n", it.first.c_str(), (*(static_cast<std::string*>(it.second.value))).c_str()); return;
-                case VARTYPE_INT:    log->Info("%s = %d\n", it.first.c_str(), *(static_cast<int*>(it.second.value))); return;
-                case VARTYPE_LONG:   log->Info("%s = %d\n", it.first.c_str(), *(static_cast<long*>(it.second.value))); return;
-                case VARTYPE_DOUBLE: log->Info("%s = %f\n", it.first.c_str(), *(static_cast<double*>(it.second.value))); return;
-                case VARTYPE_FLOAT:  log->Info("%s = %f\n", it.first.c_str(), *(static_cast<float*>(it.second.value))); return;
-                case VARTYPE_BOOL:
-                    if(*(static_cast<bool*>(it.second.value))) val = "true";
-                    else val = "false";
-                    log->Info("%s = %s\n", it.first.c_str(), val.c_str());
-                    return;
-                default:
-                case VARTYPE_NULL:   log->Info("%s = (null)", it.first.c_str()); return;
+            if(it.second.get != nullptr) it.second.get(&(it.second));
+            if(it.second.value == nullptr) {
+                log->Info("%s = (null)\n", it.first.c_str()); return;
+            } else {
+                switch(it.second.type) {
+                    case VARTYPE_STRING: log->Info("%s = %s\n", it.first.c_str(), (*(static_cast<std::string*>(it.second.value))).c_str()); return;
+                    case VARTYPE_INT:    log->Info("%s = %d\n", it.first.c_str(), *(static_cast<int*>(it.second.value))); return;
+                    case VARTYPE_LONG:   log->Info("%s = %d\n", it.first.c_str(), *(static_cast<long*>(it.second.value))); return;
+                    case VARTYPE_DOUBLE: log->Info("%s = %f\n", it.first.c_str(), *(static_cast<double*>(it.second.value))); return;
+                    case VARTYPE_FLOAT:  log->Info("%s = %f\n", it.first.c_str(), *(static_cast<float*>(it.second.value))); return;
+                    case VARTYPE_BOOL:
+                        if(*(static_cast<bool*>(it.second.value))) val = "true";
+                        else val = "false";
+                        log->Info("%s = %s\n", it.first.c_str(), val.c_str());
+                        return;
+                    case VARTYPE_OBJECT:  log->Info("%s = Object %d\n", it.first.c_str(), ((static_cast<CObject*>(it.second.value)))->GetID()); return;
+                    default:
+                    case VARTYPE_NULL:   log->Info("%s = (null)\n", it.first.c_str()); return;
+                }
             }
         }
     }

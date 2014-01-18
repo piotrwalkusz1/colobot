@@ -421,6 +421,8 @@ protected:
     void        StopDisplayVisit();
     bool        TestGadgetQuantity(int rank);
     void        UpdateSpeedLabel();
+    
+    static Error ConsoleUpdateSelect(ConsoleVariable* var);
 
 
 protected:

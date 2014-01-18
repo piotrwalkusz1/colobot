@@ -635,6 +635,9 @@ CRobotMain::CRobotMain(CApplication* app, bool loadProfile)
     m_app->RegisterVariables();
     m_engine->RegisterVariables();
     m_cheat       = new CCheat();
+    
+    m_console->AddVariable("currentObject", VARTYPE_OBJECT, nullptr);
+    m_console->AddVariableGetFunction("currentObject", ConsoleUpdateSelect);
 
     m_engine->SetTerrain(m_terrain);
     m_filesDir = m_dialog->GetFilesDir();
@@ -930,6 +933,12 @@ CRobotMain::~CRobotMain()
     m_console = nullptr;
 
     m_app = nullptr;
+}
+
+Error CRobotMain::ConsoleUpdateSelect(ConsoleVariable* var)
+{
+    var->value = CRobotMain::GetInstancePointer()->GetSelect();
+    return ERR_OK;
 }
 
 Gfx::CCamera* CRobotMain::GetCamera()
