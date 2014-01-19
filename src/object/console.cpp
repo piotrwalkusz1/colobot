@@ -156,8 +156,6 @@ void CConsole::AddVariable(std::string name, ConsoleVariableType type, void* val
     ConsoleVariable var;
     var.type = type;
     var.value = value;
-    var.set = nullptr;
-    var.get = nullptr;
     CLogger::GetInstancePointer()->Debug("Console: %s variable \"%s\" (%s)\n", (m_variables.find(name) == m_variables.end() ? "Added" : "Updated"), name.c_str(), GetVariableTypeAsString(type).c_str());
     m_variables[name] = var;
 }
@@ -233,11 +231,61 @@ std::string CConsole::GetVariableTypeAsString(ConsoleVariableType type)
     }
 }
 
+ConsoleVariable CConsole::GetCObjectClassVariable(ConsoleVariable* var, std::string field)
+{
+    ConsoleVariable res;
+    
+    if(var->value == nullptr) {
+        res.type = VARTYPE_NULL;
+        return res;
+    }
+    
+    if(field == "id")
+    {
+        res.type = VARTYPE_INT;
+        res.parent = var;
+        res.value = new int;
+        res.remove = [](ConsoleVariable* var) -> void
+        {
+            delete static_cast<int*>(var->value);
+            var->value = nullptr;
+        };
+        res.get = [](ConsoleVariable* var) -> Error
+        {
+            CObject* obj = static_cast<CObject*>(var->parent->value);
+            *(static_cast<int*>(var->value)) = obj->GetID();
+            return ERR_OK;
+        };
+        res.set = [](ConsoleVariable var, std::string params) -> Error
+        {
+            CObject* obj = static_cast<CObject*>(var.parent->value);
+            int newValue = boost::lexical_cast<int>(params);
+            obj->SetID(newValue);
+            *(static_cast<int*>(var.value)) = newValue;
+            return ERR_OK;
+        };
+    } else {
+        res.type = VARTYPE_NULL;
+    }
+    return res;
+}
+
 ConsoleVariable CConsole::GetVariable(std::string name)
 {
     for(auto& it : m_variables) {
-        if(name == it.first) {
+        size_t dotPos = name.find(".", 0);
+        std::string base;
+        if(dotPos == std::string::npos) base = name;
+        else base = name.substr(0, dotPos);
+        
+        if(base == it.first) {
             if(it.second.get != nullptr) it.second.get(&(it.second));
+            if(it.second.type == VARTYPE_OBJECT) {
+                if(dotPos != std::string::npos) {
+                    std::string field = name.substr(dotPos+1);
+                    return GetCObjectClassVariable(&(it.second), field);
+                }
+            }
             return it.second;
         }
     }
@@ -303,43 +351,49 @@ void CConsole::ProcessCommand(std::string input, bool first)
             
             if(var.set == nullptr) {
                 switch(var.type) {
-                    case VARTYPE_STRING: *(static_cast<std::string*>(var.value)) = *(static_cast<std::string*>(var2.value)); return;
-                    case VARTYPE_INT:    *(static_cast<int*>(var.value))         = *(static_cast<int*>(var2.value)); return;
-                    case VARTYPE_LONG:   *(static_cast<long*>(var.value))        = *(static_cast<long*>(var2.value)); return;
-                    case VARTYPE_DOUBLE: *(static_cast<double*>(var.value))      = *(static_cast<double*>(var2.value)); return;
-                    case VARTYPE_FLOAT:  *(static_cast<float*>(var.value))       = *(static_cast<float*>(var2.value)); return;
-                    case VARTYPE_BOOL:   *(static_cast<bool*>(var.value))        = *(static_cast<bool*>(var2.value)); return;
-                    case VARTYPE_OBJECT: var.value                               = var2.value; return;
-                    default: CLogger::GetInstancePointer()->Error("Error in console command: unknown variable type\n"); return;
+                    case VARTYPE_STRING: *(static_cast<std::string*>(var.value)) = *(static_cast<std::string*>(var2.value)); break;
+                    case VARTYPE_INT:    *(static_cast<int*>(var.value))         = *(static_cast<int*>(var2.value)); break;
+                    case VARTYPE_LONG:   *(static_cast<long*>(var.value))        = *(static_cast<long*>(var2.value)); break;
+                    case VARTYPE_DOUBLE: *(static_cast<double*>(var.value))      = *(static_cast<double*>(var2.value)); break;
+                    case VARTYPE_FLOAT:  *(static_cast<float*>(var.value))       = *(static_cast<float*>(var2.value)); break;
+                    case VARTYPE_BOOL:   *(static_cast<bool*>(var.value))        = *(static_cast<bool*>(var2.value)); break;
+                    case VARTYPE_OBJECT: var.value                               = var2.value; break;
+                    default: CLogger::GetInstancePointer()->Error("Error in console command: unknown variable type\n"); break;
                 }
+                if(var.remove != nullptr) var.remove(&var);
+                if(var2.remove != nullptr) var2.remove(&var2);
+                return;
             } else {
                 switch(var.type) {
-                    case VARTYPE_STRING: var.set(var, *(static_cast<std::string*>(var2.value))); return;
-                    case VARTYPE_INT:    var.set(var, boost::lexical_cast<std::string>(*(static_cast<int*>(var2.value)))); return;
-                    case VARTYPE_LONG:   var.set(var, boost::lexical_cast<std::string>(*(static_cast<long*>(var2.value)))); return;
-                    case VARTYPE_DOUBLE: var.set(var, boost::lexical_cast<std::string>(*(static_cast<double*>(var2.value)))); return;
-                    case VARTYPE_FLOAT:  var.set(var, boost::lexical_cast<std::string>(*(static_cast<float*>(var2.value)))); return;
+                    case VARTYPE_STRING: var.set(var, *(static_cast<std::string*>(var2.value))); break;
+                    case VARTYPE_INT:    var.set(var, boost::lexical_cast<std::string>(*(static_cast<int*>(var2.value)))); break;
+                    case VARTYPE_LONG:   var.set(var, boost::lexical_cast<std::string>(*(static_cast<long*>(var2.value)))); break;
+                    case VARTYPE_DOUBLE: var.set(var, boost::lexical_cast<std::string>(*(static_cast<double*>(var2.value)))); break;
+                    case VARTYPE_FLOAT:  var.set(var, boost::lexical_cast<std::string>(*(static_cast<float*>(var2.value)))); break;
                     case VARTYPE_BOOL:
                         if(*(static_cast<bool*>(var2.value)))
                             var.set(var, "true");
                         else
                             var.set(var, "false");
-                        return;
-                    case VARTYPE_OBJECT: CLogger::GetInstancePointer()->Error("You can't assign a value to CObject\n"); return;
-                    default: CLogger::GetInstancePointer()->Error("Error in console command: unknown variable type\n"); return;
+                        break;
+                    case VARTYPE_OBJECT: CLogger::GetInstancePointer()->Error("You can't assign a value to CObject\n"); break;
+                    default: CLogger::GetInstancePointer()->Error("Error in console command: unknown variable type\n"); break;
                 }
+                if(var.remove != nullptr) var.remove(&var);
+                if(var2.remove != nullptr) var2.remove(&var2);
+                return;
             }
         }
         
         
         if(var.set == nullptr) {
             switch(var.type) {
-                case VARTYPE_NULL:   CLogger::GetInstancePointer()->Error("Error in console command: tried to assign to NULL\n"); return;
-                case VARTYPE_STRING: *(static_cast<std::string*>(var.value)) = boost::algorithm::join(command, " "); return;
-                case VARTYPE_INT:    *(static_cast<int*>(var.value))         = boost::lexical_cast<int>(command[0]); return;
-                case VARTYPE_LONG:   *(static_cast<long*>(var.value))        = boost::lexical_cast<long>(command[0]); return;
-                case VARTYPE_DOUBLE: *(static_cast<double*>(var.value))      = boost::lexical_cast<double>(command[0]); return;
-                case VARTYPE_FLOAT:  *(static_cast<float*>(var.value))       = boost::lexical_cast<float>(command[0]); return;
+                case VARTYPE_NULL:   CLogger::GetInstancePointer()->Error("Error in console command: tried to assign to NULL\n"); break;
+                case VARTYPE_STRING: *(static_cast<std::string*>(var.value)) = boost::algorithm::join(command, " "); break;
+                case VARTYPE_INT:    *(static_cast<int*>(var.value))         = boost::lexical_cast<int>(command[0]); break;
+                case VARTYPE_LONG:   *(static_cast<long*>(var.value))        = boost::lexical_cast<long>(command[0]); break;
+                case VARTYPE_DOUBLE: *(static_cast<double*>(var.value))      = boost::lexical_cast<double>(command[0]); break;
+                case VARTYPE_FLOAT:  *(static_cast<float*>(var.value))       = boost::lexical_cast<float>(command[0]); break;
                 case VARTYPE_BOOL:
                     if(command[0] == "true")
                         *(static_cast<bool*>(var.value)) = true;
@@ -347,40 +401,46 @@ void CConsole::ProcessCommand(std::string input, bool first)
                         *(static_cast<bool*>(var.value)) = false;
                     else
                         CLogger::GetInstancePointer()->Error("Error in console command: unable to interpret \"%s\" as boolean\n", command[0].c_str());
-                    return;
-                case VARTYPE_OBJECT: CLogger::GetInstancePointer()->Error("You can't assign a value to CObject\n"); return;
-                default: CLogger::GetInstancePointer()->Error("Error in console command: unknown variable type\n"); return;
+                    break;
+                case VARTYPE_OBJECT: CLogger::GetInstancePointer()->Error("You can't assign a value to CObject\n"); break;
+                default: CLogger::GetInstancePointer()->Error("Error in console command: unknown variable type\n"); break;
             }
+            if(var.remove != nullptr) var.remove(&var);
+            return;
         } else {
             var.set(var, boost::algorithm::join(command, " "));
+            if(var.remove != nullptr) var.remove(&var);
             return;
         }
     }
     
-    for(auto& it : m_variables) {
-        if(command[0] == it.first) {
-            CLogger* log = CLogger::GetInstancePointer();
-            std::string val;
-            if(it.second.get != nullptr) it.second.get(&(it.second));
-            if(it.second.value == nullptr) {
-                log->Info("%s = (null)\n", it.first.c_str()); return;
-            } else {
-                switch(it.second.type) {
-                    case VARTYPE_STRING: log->Info("%s = %s\n", it.first.c_str(), (*(static_cast<std::string*>(it.second.value))).c_str()); return;
-                    case VARTYPE_INT:    log->Info("%s = %d\n", it.first.c_str(), *(static_cast<int*>(it.second.value))); return;
-                    case VARTYPE_LONG:   log->Info("%s = %d\n", it.first.c_str(), *(static_cast<long*>(it.second.value))); return;
-                    case VARTYPE_DOUBLE: log->Info("%s = %f\n", it.first.c_str(), *(static_cast<double*>(it.second.value))); return;
-                    case VARTYPE_FLOAT:  log->Info("%s = %f\n", it.first.c_str(), *(static_cast<float*>(it.second.value))); return;
-                    case VARTYPE_BOOL:
-                        if(*(static_cast<bool*>(it.second.value))) val = "true";
-                        else val = "false";
-                        log->Info("%s = %s\n", it.first.c_str(), val.c_str());
-                        return;
-                    case VARTYPE_OBJECT:  log->Info("%s = Object %d\n", it.first.c_str(), ((static_cast<CObject*>(it.second.value)))->GetID()); return;
-                    default:
-                    case VARTYPE_NULL:   log->Info("%s = (null)\n", it.first.c_str()); return;
-                }
+    ConsoleVariable var = GetVariable(command[0]);
+    if(var.type != VARTYPE_NULL) {
+        CLogger* log = CLogger::GetInstancePointer();
+        std::string val;
+        if(var.get != nullptr) var.get(&var);
+        if(var.value == nullptr) {
+            log->Info("%s = (null)\n", command[0].c_str()); return;
+            if(var.remove != nullptr) var.remove(&var);
+            return;
+        } else {
+            switch(var.type) {
+                case VARTYPE_STRING: log->Info("%s = %s\n", command[0].c_str(), (*(static_cast<std::string*>(var.value))).c_str()); break;
+                case VARTYPE_INT:    log->Info("%s = %d\n", command[0].c_str(), *(static_cast<int*>(var.value))); break;
+                case VARTYPE_LONG:   log->Info("%s = %d\n", command[0].c_str(), *(static_cast<long*>(var.value))); break;
+                case VARTYPE_DOUBLE: log->Info("%s = %f\n", command[0].c_str(), *(static_cast<double*>(var.value))); break;
+                case VARTYPE_FLOAT:  log->Info("%s = %f\n", command[0].c_str(), *(static_cast<float*>(var.value))); break;
+                case VARTYPE_BOOL:
+                    if(*(static_cast<bool*>(var.value))) val = "true";
+                    else val = "false";
+                    log->Info("%s = %s\n", command[0].c_str(), val.c_str());
+                    break;
+                case VARTYPE_OBJECT:  log->Info("%s = Object %d\n", command[0].c_str(), ((static_cast<CObject*>(var.value)))->GetID()); break;
+                default:
+                case VARTYPE_NULL:   log->Info("%s = (null)\n", command[0].c_str()); break;
             }
+            if(var.remove != nullptr) var.remove(&var);
+            return;
         }
     }
     
@@ -400,6 +460,7 @@ Error CConsole::toggle(std::vector<std::string> params)
         return ERR_GENERIC;
     }
     *(static_cast<bool*>(var.value)) = ! *(static_cast<bool*>(var.value));
+    if(var.remove != nullptr) var.remove(&var);
     
     return ERR_OK;
 }
@@ -474,6 +535,8 @@ Error CConsole::bit_or(std::vector<std::string> params)
     else
         *(static_cast<long*>(var.value)) |= bitmask;
     
+    if(var.remove != nullptr) var.remove(&var);
+    
     return ERR_OK;
 }
 
@@ -498,6 +561,8 @@ Error CConsole::bit_and(std::vector<std::string> params)
     else
         *(static_cast<long*>(var.value)) &= bitmask;
     
+    if(var.remove != nullptr) var.remove(&var);
+    
     return ERR_OK;
 }
 
@@ -521,5 +586,8 @@ Error CConsole::bit_clear(std::vector<std::string> params)
         *(static_cast<int*>(var.value)) &= (~bitmask);
     else
         *(static_cast<long*>(var.value)) &= (~bitmask);
+    
+    if(var.remove != nullptr) var.remove(&var);
+    
     return ERR_OK;
 }

@@ -54,10 +54,12 @@ enum ConsoleVariableType {
 };
 
 struct ConsoleVariable {
-    ConsoleVariableType type;
-    void* value;
-    Error (*set)(ConsoleVariable, std::string);
-    Error (*get)(ConsoleVariable*);
+    ConsoleVariableType type = VARTYPE_NULL;
+    void* value = nullptr;
+    Error (*set)(ConsoleVariable, std::string) = nullptr;
+    Error (*get)(ConsoleVariable*) = nullptr;
+    void (*remove)(ConsoleVariable*) = nullptr;
+    ConsoleVariable* parent = nullptr;
 };
 
 class CConsole : public CSingleton<CConsole>
@@ -91,6 +93,7 @@ public:
     void AddVariableGetFunction(std::string, Error (*get_func)(ConsoleVariable*));
     void AddAlias(std::string name, std::string cmd);
     
+    ConsoleVariable GetCObjectClassVariable(ConsoleVariable* var, std::string field);
     ConsoleVariable GetVariable(std::string name);
     
 private:
