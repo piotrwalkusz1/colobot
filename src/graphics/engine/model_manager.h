@@ -35,7 +35,7 @@ class CModelFile;
 class CModelManager : public CSingleton<CModelManager>
 {
 public:
-    CModelManager(CEngine* engine);
+    CModelManager(CEngine* engine, bool useNewModels);
     ~CModelManager();
 
     //! Loads a model from given file
@@ -95,6 +95,7 @@ private:
     std::map<FileInfo, ModelInfo> m_models;
     std::vector<int> m_copiesBaseRanks;
     CEngine* m_engine;
+    bool m_useNewModels;
 };
 
 } // namespace Gfx

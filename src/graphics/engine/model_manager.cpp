@@ -3,19 +3,22 @@
 #include "app/app.h"
 
 #include "common/logger.h"
+#include <common/stringutils.h>
 
 #include "graphics/engine/engine.h"
 #include "graphics/engine/model_io.h"
 
 #include <cstdio>
+#include <functional>
 
 template<> Gfx::CModelManager* CSingleton<Gfx::CModelManager>::m_instance = nullptr;
 
 namespace Gfx {
 
-CModelManager::CModelManager(CEngine* engine)
+CModelManager::CModelManager(CEngine* engine, bool useNewModels)
+ : m_engine(engine)
+ , m_useNewModels(useNewModels)
 {
-    m_engine = engine;
 }
 
 CModelManager::~CModelManager()
@@ -24,15 +27,23 @@ CModelManager::~CModelManager()
 
 bool CModelManager::LoadModel(const std::string& fileName, bool mirrored)
 {
-    GetLogger()->Debug("Loading model '%s'\n", fileName.c_str());
+    std::string actualFileName = m_useNewModels
+        ? StrUtils::Replace(fileName, ".mod", ".txt")
+        : fileName;
+
+    GetLogger()->Debug("Loading model '%s'\n", actualFileName.c_str());
+
+    DataDir dir = m_useNewModels ? DIR_MODEL_NEW : DIR_MODEL;
+    std::string filePath = CApplication::GetInstance().GetDataFilePath(dir, actualFileName);
 
     CModelIO::SetPrintDebugInfo(CApplication::GetInstance().IsDebugModeActive(DEBUG_MODELS));
 
-    std::string filePath = CApplication::GetInstance().GetDataFilePath(DIR_MODEL, fileName);
-
     CModel model;
 
-    if (!CModelIO::ReadModel(filePath, model))
+    typedef bool (*ReadFunction)(const std::string&, Gfx::CModel&);
+    ReadFunction readFunction = m_useNewModels ? ReadFunction(&CModelIO::ReadTextModel) : ReadFunction(&CModelIO::ReadModel);
+
+    if (!readFunction(filePath, model))
     {
         GetLogger()->Error("Loading model '%s' failed\n", filePath.c_str());
         return false;

@@ -189,6 +189,7 @@ enum DataDir
     DIR_ICON,     //! < icons & images
     DIR_LEVEL,    //! < levels
     DIR_MODEL,    //! < models
+    DIR_MODEL_NEW, //! < new models
     DIR_MUSIC,    //! < music
     DIR_SOUND,    //! < sounds
     DIR_TEXTURE,  //! < textures

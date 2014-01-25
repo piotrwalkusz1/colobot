@@ -153,7 +153,7 @@ CApplication::CApplication()
 
     m_runSceneName = "";
     m_runSceneRank = 0;
-    
+
     m_sceneTest = false;
 
     m_language = LANGUAGE_ENV;
@@ -161,6 +161,8 @@ CApplication::CApplication()
     m_lowCPU = true;
 
     m_protoMode = false;
+
+    m_useNewModels = false;
 
     for (int i = 0; i < DIR_MAX; ++i)
         m_standardDataDirs[i] = nullptr;
@@ -171,6 +173,7 @@ CApplication::CApplication()
     m_standardDataDirs[DIR_ICON]     = "icons";
     m_standardDataDirs[DIR_LEVEL]    = "levels";
     m_standardDataDirs[DIR_MODEL]    = "models";
+    m_standardDataDirs[DIR_MODEL_NEW] = "models-new";
     m_standardDataDirs[DIR_MUSIC]    = "music";
     m_standardDataDirs[DIR_SOUND]    = "sounds";
     m_standardDataDirs[DIR_TEXTURE]  = "textures";
@@ -233,7 +236,8 @@ ParseArgsStatus CApplication::ParseArguments(int argc, char *argv[])
         OPT_DATADIR,
         OPT_LANGDIR,
         OPT_TEXPACK,
-        OPT_VBO
+        OPT_VBO,
+        OPT_MODELS
     };
 
     option options[] =
@@ -249,6 +253,7 @@ ParseArgsStatus CApplication::ParseArguments(int argc, char *argv[])
         { "langdir", required_argument, nullptr, OPT_LANGDIR },
         { "texpack", required_argument, nullptr, OPT_TEXPACK },
         { "vbo", required_argument, nullptr, OPT_VBO },
+        { "models", required_argument, nullptr, OPT_MODELS },
         { nullptr, 0, nullptr, 0}
     };
 
@@ -290,6 +295,7 @@ ParseArgsStatus CApplication::ParseArguments(int argc, char *argv[])
                 GetLogger()->Message("  -langdir path       set custom language directory path\n");
                 GetLogger()->Message("  -texpack path       set path to custom texture pack\n");
                 GetLogger()->Message("  -vbo mode           set OpenGL VBO mode (one of: auto, enable, disable)\n");
+                GetLogger()->Message("  -models type        set which models to use (one of: old, new)\n");
                 return PARSE_ARGS_HELP;
             }
             case OPT_DEBUG:
@@ -383,6 +389,26 @@ ParseArgsStatus CApplication::ParseArguments(int argc, char *argv[])
                 else
                 {
                     GetLogger()->Error("Invalid vbo mode: '%s'\n", optarg);
+                    return PARSE_ARGS_FAIL;
+                }
+
+                break;
+            }
+            case OPT_MODELS:
+            {
+                std::string models;
+                models = optarg;
+                if (models == "old")
+                {
+                    m_useNewModels = false;
+                }
+                else if (models == "new")
+                {
+                    m_useNewModels = true;
+                }
+                else
+                {
+                    GetLogger()->Error("Invalid models type: '%s'\n", optarg);
                     return PARSE_ARGS_FAIL;
                 }
 
@@ -558,7 +584,7 @@ bool CApplication::Create()
     }
 
     // Create model manager
-    m_modelManager = new Gfx::CModelManager(m_engine);
+    m_modelManager = new Gfx::CModelManager(m_engine, m_useNewModels);
 
     // Create the robot application.
     m_robotMain = new CRobotMain(this, !defaultValues);
