@@ -515,15 +515,13 @@ EngineBaseObjTexTier& CEngine::AddLevel2(EngineBaseObject& p1, const std::string
     return p1.next.back();
 }
 
-EngineBaseObjLODTier& CEngine::AddLevel3(EngineBaseObjTexTier& p2, LODLevel lodLevel)
+EngineBaseObjLODTier& CEngine::AddLevel3(EngineBaseObjTexTier& p2)
 {
-    for (int i = 0; i < static_cast<int>( p2.next.size() ); i++)
+    if (p2.next.empty())
     {
-        if (p2.next[i].lodLevel == lodLevel)
-            return p2.next[i];
+        p2.next.push_back(EngineBaseObjLODTier());
     }
 
-    p2.next.push_back(EngineBaseObjLODTier(lodLevel));
     return p2.next.back();
 }
 
@@ -658,13 +656,13 @@ void CEngine::AddBaseObjTriangles(int baseObjRank, const std::vector<VertexTex2>
                                   EngineTriangleType triangleType,
                                   const Material& material, int state,
                                   std::string tex1Name, std::string tex2Name,
-                                  LODLevel lodLevel, bool globalUpdate)
+                                  bool globalUpdate)
 {
     assert(baseObjRank >= 0 && baseObjRank < static_cast<int>( m_baseObjects.size() ));
 
     EngineBaseObject&      p1 = m_baseObjects[baseObjRank];
     EngineBaseObjTexTier&  p2 = AddLevel2(p1, tex1Name, tex2Name);
-    EngineBaseObjLODTier&  p3 = AddLevel3(p2, lodLevel);
+    EngineBaseObjLODTier&  p3 = AddLevel3(p2);
     EngineBaseObjDataTier& p4 = AddLevel4(p3, triangleType, material, state);
 
     p4.vertices.insert(p4.vertices.end(), vertices.begin(), vertices.end());
@@ -699,13 +697,13 @@ void CEngine::AddBaseObjTriangles(int baseObjRank, const std::vector<VertexTex2>
 
 void CEngine::AddBaseObjQuick(int baseObjRank, const EngineBaseObjDataTier& buffer,
                               std::string tex1Name, std::string tex2Name,
-                              LODLevel lodLevel, bool globalUpdate)
+                              bool globalUpdate)
 {
     assert(baseObjRank >= 0 && baseObjRank < static_cast<int>( m_baseObjects.size() ));
 
     EngineBaseObject&      p1 = m_baseObjects[baseObjRank];
     EngineBaseObjTexTier&  p2 = AddLevel2(p1, tex1Name, tex2Name);
-    EngineBaseObjLODTier&  p3 = AddLevel3(p2, lodLevel);
+    EngineBaseObjLODTier&  p3 = AddLevel3(p2);
 
     p3.next.push_back(buffer);
 
@@ -799,7 +797,6 @@ void CEngine::DebugObject(int objRank)
             EngineBaseObjLODTier& p3 = p2.next[l3];
 
             l->Debug("    l3:\n");
-            l->Debug("     lodLevel: %d\n", p3.lodLevel);
 
             for (int l4 = 0; l4 < static_cast<int>( p3.next.size() ); l4++)
             {
@@ -958,7 +955,7 @@ int CEngine::GetObjectTotalTriangles(int objRank)
 
 EngineBaseObjDataTier* CEngine::FindTriangles(int objRank, const Material& material,
                                               int state, std::string tex1Name,
-                                              std::string tex2Name, int lodLevelMask)
+                                              std::string tex2Name)
 {
     assert(objRank >= 0 && objRank < static_cast<int>( m_objects.size() ));
 
@@ -981,9 +978,6 @@ EngineBaseObjDataTier* CEngine::FindTriangles(int objRank, const Material& mater
         {
             EngineBaseObjLODTier& p3 = p2.next[l3];
 
-            if ((p3.lodLevel & lodLevelMask) == 0)
-                continue;
-
             for (int l4 = 0; l4 < static_cast<int>( p3.next.size() ); l4++)
             {
                 EngineBaseObjDataTier& p4 = p3.next[l4];
@@ -1000,7 +994,7 @@ EngineBaseObjDataTier* CEngine::FindTriangles(int objRank, const Material& mater
     return nullptr;
 }
 
-int CEngine::GetPartialTriangles(int objRank, int lodLevelMask, float percent, int maxCount,
+int CEngine::GetPartialTriangles(int objRank, float percent, int maxCount,
                                  std::vector<EngineTriangle>& triangles)
 {
     assert(objRank >= 0 && objRank < static_cast<int>( m_objects.size() ));
@@ -1026,9 +1020,6 @@ int CEngine::GetPartialTriangles(int objRank, int lodLevelMask, float percent, i
         for (int l3 = 0; l3 < static_cast<int>( p2.next.size() ); l3++)
         {
             EngineBaseObjLODTier& p3 = p2.next[l3];
-
-            if ((p3.lodLevel & lodLevelMask) == 0)
-                continue;
 
             for (int l4 = 0; l4 < static_cast<int>( p3.next.size() ); l4++)
             {
@@ -1121,12 +1112,12 @@ void CEngine::ChangeSecondTexture(int objRank, const std::string& tex2Name)
 
 void CEngine::ChangeTextureMapping(int objRank, const Material& mat, int state,
                                    const std::string& tex1Name, const std::string& tex2Name,
-                                   int lodLevelMask, EngineTextureMapping mode,
+                                   EngineTextureMapping mode,
                                    float au, float bu, float av, float bv)
 {
     assert(objRank >= 0 && objRank < static_cast<int>( m_objects.size() ));
 
-    EngineBaseObjDataTier* p4 = FindTriangles(objRank, mat, state, tex1Name, tex2Name, lodLevelMask);
+    EngineBaseObjDataTier* p4 = FindTriangles(objRank, mat, state, tex1Name, tex2Name);
     if (p4 == nullptr)
         return;
 
@@ -1183,12 +1174,12 @@ void CEngine::ChangeTextureMapping(int objRank, const Material& mat, int state,
 
 void CEngine::TrackTextureMapping(int objRank, const Material& mat, int state,
                                   const std::string& tex1Name, const std::string& tex2Name,
-                                  int lodLevelMask, EngineTextureMapping mode,
+                                  EngineTextureMapping mode,
                                   float pos, float factor, float tl, float ts, float tt)
 {
     assert(objRank >= 0 && objRank < static_cast<int>( m_objects.size() ));
 
-    EngineBaseObjDataTier* p4 = FindTriangles(objRank, mat, state, tex1Name, tex2Name, lodLevelMask);
+    EngineBaseObjDataTier* p4 = FindTriangles(objRank, mat, state, tex1Name, tex2Name);
     if (p4 == nullptr)
         return;
 
@@ -1812,9 +1803,6 @@ int CEngine::DetectObject(Math::Point mouse)
             {
                 EngineBaseObjLODTier& p3 = p2.next[l3];
 
-                if (p3.lodLevel != LOD_Constant && p3.lodLevel != LOD_High)
-                    continue;
-
                 for (int l4 = 0; l4 < static_cast<int>( p3.next.size() ); l4++)
                 {
                     EngineBaseObjDataTier& p4 = p3.next[l4];
@@ -1923,43 +1911,6 @@ bool CEngine::IsVisible(int objRank)
 
     m_objects[objRank].visible = false;
     return false;
-}
-
-bool CEngine::IsWithinLODLimit(float distance, LODLevel lodLevel)
-{
-    float min = 0.0f, max = 0.0f;
-
-    if (lodLevel == LOD_Constant)
-    {
-        min = 0.0f;
-        max = m_terrainVision * m_clippingDistance;
-    }
-    else
-    {
-        if (lodLevel == LOD_High)
-        {
-            min = 0.0f;
-            max = 100.0f;
-        }
-        else if (lodLevel == LOD_Medium)
-        {
-            min = 100.0f;
-            max = 200.0f;
-        }
-        else if (lodLevel == LOD_Low)
-        {
-            min = 100.0f;
-            max = 1000000.0f;
-        }
-
-        min *= m_size.x / 640.0f;
-        min *= m_objectDetail*2.0f;
-
-        max *= m_size.x / 640.0f;
-        max *= m_objectDetail*2.0f;
-    }
-
-    return distance >= min && distance < max;
 }
 
 bool CEngine::TransformPoint(Math::Vector& p2D, int objRank, Math::Vector p3D)
@@ -3175,9 +3126,6 @@ void CEngine::Draw3DScene()
                 {
                     EngineBaseObjLODTier& p3 = p2.next[l3];
 
-                    if (! IsWithinLODLimit(m_objects[objRank].distance, p3.lodLevel))
-                        continue;
-
                     for (int l4 = 0; l4 < static_cast<int>( p3.next.size() ); l4++)
                     {
                         EngineBaseObjDataTier& p4 = p3.next[l4];
@@ -3241,9 +3189,6 @@ void CEngine::Draw3DScene()
             for (int l3 = 0; l3 < static_cast<int>( p2.next.size() ); l3++)
             {
                 EngineBaseObjLODTier& p3 = p2.next[l3];
-
-                if (! IsWithinLODLimit(m_objects[objRank].distance, p3.lodLevel))
-                    continue;
 
                 for (int l4 = 0; l4 < static_cast<int>( p3.next.size() ); l4++)
                 {
@@ -3309,9 +3254,6 @@ void CEngine::Draw3DScene()
                 for (int l3 = 0; l3 < static_cast<int>( p2.next.size() ); l3++)
                 {
                     EngineBaseObjLODTier& p3 = p2.next[l3];
-
-                    if (! IsWithinLODLimit(m_objects[objRank].distance, p3.lodLevel))
-                        continue;
 
                     for (int l4 = 0; l4 < static_cast<int>( p3.next.size() ); l4++)
                     {
@@ -3472,9 +3414,6 @@ void CEngine::DrawInterface()
                 for (int l3 = 0; l3 < static_cast<int>( p2.next.size() ); l3++)
                 {
                     EngineBaseObjLODTier& p3 = p2.next[l3];
-
-                    if (! IsWithinLODLimit(m_objects[objRank].distance, p3.lodLevel))
-                        continue;
 
                     for (int l4 = 0; l4 < static_cast<int>( p3.next.size() ); l4++)
                     {
