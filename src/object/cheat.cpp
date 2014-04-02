@@ -93,7 +93,7 @@ CCheat::CCheat()
     
     console->AddAlias("fullenergy", "currentObject.energyCell.power = 1.0");
     console->AddAlias("fullshield", "currentObject.shield = 1.0");
-    console->AddAlias("fullrange", "currentObject.range = 1.0"); //TODO!
+    console->AddAlias("fullrange", "currentObject.range = 1.0");
     console->AddAlias("fullpower", "fullenergy&fullshield&fullrange");
 }
 
