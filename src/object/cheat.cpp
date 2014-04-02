@@ -87,6 +87,14 @@ CCheat::CCheat()
     console->AddAlias("invwater", "toggle water");
     console->AddAlias("invsky", "toggle sky");
     console->AddAlias("invplanet", "toggle planet");
+    
+    console->AddAlias("noclip", "currentObject.clip = false");
+    console->AddAlias("clip", "currentObject.clip = true");
+    
+    console->AddAlias("fullenergy", "currentObject.energyCell.power = 1.0");
+    console->AddAlias("fullshield", "currentObject.shield = 1.0");
+    console->AddAlias("fullrange", "currentObject.range = 1.0"); //TODO!
+    console->AddAlias("fullpower", "fullenergy&fullshield&fullrange");
 }
 
 CCheat::~CCheat()
@@ -193,22 +201,6 @@ Error CCheat::photo(std::vector<std::string> params)
         return;
     }
 
-    if (strcmp(cmd, "noclip") == 0)
-    {
-        CObject* object = GetSelect();
-        if (object != nullptr)
-            object->SetClip(false);
-        return;
-    }
-
-    if (strcmp(cmd, "clip") == 0)
-    {
-        CObject* object = GetSelect();
-        if (object != nullptr)
-            object->SetClip(true);
-        return;
-    }
-
     if (strcmp(cmd, "addhusky") == 0)
     {
         CObject* object = GetSelect();
@@ -224,68 +216,6 @@ Error CCheat::photo(std::vector<std::string> params)
             object->SetRange(object->GetRange()*10.0f);
         return;
     }
-
-    if (strcmp(cmd, "fullpower") == 0)
-    {
-        CObject* object = GetSelect();
-        if (object != nullptr)
-        {
-            CObject* power = object->GetPower();
-            if (power != nullptr)
-                power->SetEnergy(1.0f);
-
-            object->SetShield(1.0f);
-            CPhysics* physics = object->GetPhysics();
-            if (physics != nullptr)
-                physics->SetReactorRange(1.0f);
-        }
-        return;
-    }
-
-    if (strcmp(cmd, "fullenergy") == 0)
-    {
-        CObject* object = GetSelect();
-        if (object != nullptr)
-        {
-            CObject* power = object->GetPower();
-            if (power != nullptr)
-                power->SetEnergy(1.0f);
-        }
-        return;
-    }
-
-    if (strcmp(cmd, "fullshield") == 0)
-    {
-        CObject* object = GetSelect();
-        if (object != nullptr)
-            object->SetShield(1.0f);
-        return;
-    }
-
-    if (strcmp(cmd, "fullrange") == 0)
-    {
-        CObject* object = GetSelect();
-        if (object != nullptr)
-        {
-            CPhysics* physics = object->GetPhysics();
-            if (physics != nullptr)
-                physics->SetReactorRange(1.0f);
-        }
-        return;
-    }
-}
-
-if (strcmp(cmd, "debugmode") == 0)
-{
-    if (m_app->IsDebugModeActive(DEBUG_ALL))
-    {
-        m_app->SetDebugModeActive(DEBUG_ALL, false);
-    }
-    else
-    {
-        m_app->SetDebugModeActive(DEBUG_ALL, true);
-    }
-    return;
 }
 
 if (strcmp(cmd, "showsoluce") == 0)

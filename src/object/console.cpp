@@ -21,6 +21,8 @@
 
 #include "math/geometry.h"
 
+#include "physics/physics.h"
+
 #include "ui/interface.h"
 
 #include <bitset>
@@ -235,6 +237,11 @@ ConsoleVariable CConsole::GetCObjectClassVariable(ConsoleVariable* var, std::str
 {
     ConsoleVariable res;
     
+    size_t dotPos = field.find(".", 0);
+    std::string base;
+    if(dotPos == std::string::npos) base = field;
+    else base = field.substr(0, dotPos);
+    
     if(var->value == nullptr) {
         res.type = VARTYPE_NULL;
         return res;
@@ -264,7 +271,172 @@ ConsoleVariable CConsole::GetCObjectClassVariable(ConsoleVariable* var, std::str
             *(static_cast<int*>(var.value)) = newValue;
             return ERR_OK;
         };
-    } else {
+    }
+    else if(base == "energyCell")
+    {
+        ConsoleVariable* object = new ConsoleVariable();
+        object->type = VARTYPE_OBJECT;
+        object->parent = var;
+        object->value = nullptr;
+        object->remove = [](ConsoleVariable* var) -> void
+        {
+            var->value = nullptr;
+        };
+        object->get = [](ConsoleVariable* var) -> Error
+        {
+            CObject* obj = static_cast<CObject*>(var->parent->value);
+            var->value = obj->GetPower();
+            return ERR_OK;
+        };
+        object->set = [](ConsoleVariable var, std::string params) -> Error
+        {
+            CLogger::GetInstancePointer()->Error("You can't assign a value to CObject\n");
+            return ERR_GENERIC;
+        };
+        
+        if(dotPos == std::string::npos)
+        {
+            res = *object;
+        }
+        else
+        {
+            std::string nextField = field.substr(dotPos+1);
+            object->get(object);
+            return GetCObjectClassVariable(object, nextField);
+        }
+    }
+    else if(field == "power")
+    {
+        res.type = VARTYPE_FLOAT;
+        res.parent = var;
+        res.value = new float;
+        res.remove = [](ConsoleVariable* var) -> void
+        {
+            delete static_cast<float*>(var->value);
+            var->value = nullptr;
+        };
+        res.get = [](ConsoleVariable* var) -> Error
+        {
+            CObject* obj = static_cast<CObject*>(var->parent->value);
+            *(static_cast<float*>(var->value)) = obj->GetEnergy();
+            return ERR_OK;
+        };
+        res.set = [](ConsoleVariable var, std::string params) -> Error
+        {
+            CObject* obj = static_cast<CObject*>(var.parent->value);
+            float newValue = boost::lexical_cast<float>(params);
+            obj->SetEnergy(newValue);
+            *(static_cast<float*>(var.value)) = newValue;
+            return ERR_OK;
+        };
+    }
+    else if(field == "capacity")
+    {
+        res.type = VARTYPE_FLOAT;
+        res.parent = var;
+        res.value = new float;
+        res.remove = [](ConsoleVariable* var) -> void
+        {
+            delete static_cast<float*>(var->value);
+            var->value = nullptr;
+        };
+        res.get = [](ConsoleVariable* var) -> Error
+        {
+            CObject* obj = static_cast<CObject*>(var->parent->value);
+            *(static_cast<float*>(var->value)) = obj->GetCapacity();
+            return ERR_OK;
+        };
+        res.set = [](ConsoleVariable var, std::string params) -> Error
+        {
+            CObject* obj = static_cast<CObject*>(var.parent->value);
+            float newValue = boost::lexical_cast<float>(params);
+            obj->SetCapacity(newValue);
+            *(static_cast<float*>(var.value)) = newValue;
+            return ERR_OK;
+        };
+    }
+    else if(field == "shield")
+    {
+        res.type = VARTYPE_FLOAT;
+        res.parent = var;
+        res.value = new float;
+        res.remove = [](ConsoleVariable* var) -> void
+        {
+            delete static_cast<float*>(var->value);
+            var->value = nullptr;
+        };
+        res.get = [](ConsoleVariable* var) -> Error
+        {
+            CObject* obj = static_cast<CObject*>(var->parent->value);
+            *(static_cast<float*>(var->value)) = obj->GetShield();
+            return ERR_OK;
+        };
+        res.set = [](ConsoleVariable var, std::string params) -> Error
+        {
+            CObject* obj = static_cast<CObject*>(var.parent->value);
+            float newValue = boost::lexical_cast<float>(params);
+            obj->SetShield(newValue);
+            *(static_cast<float*>(var.value)) = newValue;
+            return ERR_OK;
+        };
+    }
+    else if(field == "clip")
+    {
+        res.type = VARTYPE_BOOL;
+        res.parent = var;
+        res.value = new bool;
+        res.remove = [](ConsoleVariable* var) -> void
+        {
+            delete static_cast<bool*>(var->value);
+            var->value = nullptr;
+        };
+        res.get = [](ConsoleVariable* var) -> Error
+        {
+            CObject* obj = static_cast<CObject*>(var->parent->value);
+            *(static_cast<bool*>(var->value)) = obj->GetClip();
+            return ERR_OK;
+        };
+        res.set = [](ConsoleVariable var, std::string params) -> Error
+        {
+            CObject* obj = static_cast<CObject*>(var.parent->value);
+            bool newValue = false;
+            if(params == "true") newValue = true;
+            obj->SetClip(newValue);
+            *(static_cast<bool*>(var.value)) = newValue;
+            return ERR_OK;
+        };
+    }
+    else if(field == "range")
+    {
+        res.type = VARTYPE_FLOAT;
+        res.parent = var;
+        res.value = new float;
+        res.remove = [](ConsoleVariable* var) -> void
+        {
+            delete static_cast<float*>(var->value);
+            var->value = nullptr;
+        };
+        res.get = [](ConsoleVariable* var) -> Error
+        {
+            CObject* obj = static_cast<CObject*>(var->parent->value);
+            CPhysics* physics = obj->GetPhysics();
+            if(physics == nullptr) return ERR_GENERIC;
+            *(static_cast<float*>(var->value)) = physics->GetReactorRange();
+            return ERR_OK;
+        };
+        res.set = [](ConsoleVariable var, std::string params) -> Error
+        {
+            CObject* obj = static_cast<CObject*>(var.parent->value);
+            CPhysics* physics = obj->GetPhysics();
+            if(physics == nullptr) return ERR_GENERIC;
+            float newValue = boost::lexical_cast<float>(params);
+            physics->SetReactorRange(newValue);
+            *(static_cast<float*>(var.value)) = newValue;
+            return ERR_OK;
+        };
+    }
+    else
+    {
         res.type = VARTYPE_NULL;
     }
     return res;
