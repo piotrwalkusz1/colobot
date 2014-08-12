@@ -19,6 +19,7 @@
 
 #include "app/app.h"
 
+#include "app/gamedata.h"
 #include "app/system.h"
 
 #include "common/logger.h"
@@ -100,6 +101,7 @@ CApplication::CApplication()
     m_objMan        = new CObjectManager();
     m_eventQueue    = new CEventQueue();
     m_profile       = new CProfile();
+    m_gameData      = new CGameData();
 
     m_engine    = nullptr;
     m_device    = nullptr;
@@ -112,7 +114,7 @@ CApplication::CApplication()
     m_debugModes = 0;
     m_customDataPath = false;
 
-    m_windowTitle = "COLOBOT";
+    m_windowTitle = "COLOBOT GOLD";
 
     m_simulationSuspended = false;
 
@@ -149,7 +151,6 @@ CApplication::CApplication()
 
     m_dataPath = GetSystemUtils()->GetDataPath();
     m_langPath = GetSystemUtils()->GetLangPath();
-    m_texPackPath = "";
 
     m_runSceneName = "";
     m_runSceneRank = 0;
@@ -161,22 +162,7 @@ CApplication::CApplication()
     m_lowCPU = true;
 
     m_protoMode = false;
-
     m_useNewModels = false;
-
-    for (int i = 0; i < DIR_MAX; ++i)
-        m_standardDataDirs[i] = nullptr;
-
-    m_standardDataDirs[DIR_AI]       = "ai";
-    m_standardDataDirs[DIR_FONT]     = "fonts";
-    m_standardDataDirs[DIR_HELP]     = "help";
-    m_standardDataDirs[DIR_ICON]     = "icons";
-    m_standardDataDirs[DIR_LEVEL]    = "levels";
-    m_standardDataDirs[DIR_MODEL]    = "models";
-    m_standardDataDirs[DIR_MODEL_NEW] = "models-new";
-    m_standardDataDirs[DIR_MUSIC]    = "music";
-    m_standardDataDirs[DIR_SOUND]    = "sounds";
-    m_standardDataDirs[DIR_TEXTURE]  = "textures";
 }
 
 CApplication::~CApplication()
@@ -195,6 +181,9 @@ CApplication::~CApplication()
 
     delete m_iMan;
     m_iMan = nullptr;
+    
+    delete m_gameData;
+    m_gameData = nullptr;
 
     GetSystemUtils()->DestroyTimeStamp(m_baseTimeStamp);
     GetSystemUtils()->DestroyTimeStamp(m_curTimeStamp);
@@ -215,12 +204,6 @@ CEventQueue* CApplication::GetEventQueue()
 CSoundInterface* CApplication::GetSound()
 {
     return m_sound;
-
-    for (int i = 0; i < PCNT_MAX; ++i)
-    {
-        GetSystemUtils()->DestroyTimeStamp(m_performanceCounters[i][0]);
-        GetSystemUtils()->DestroyTimeStamp(m_performanceCounters[i][1]);
-    }
 }
 
 ParseArgsStatus CApplication::ParseArguments(int argc, char *argv[])
@@ -234,8 +217,8 @@ ParseArgsStatus CApplication::ParseArguments(int argc, char *argv[])
         OPT_LOGLEVEL,
         OPT_LANGUAGE,
         OPT_DATADIR,
+        OPT_MOD,
         OPT_LANGDIR,
-        OPT_TEXPACK,
         OPT_VBO,
         OPT_MODELS
     };
@@ -249,9 +232,8 @@ ParseArgsStatus CApplication::ParseArguments(int argc, char *argv[])
         { "loglevel", required_argument, nullptr, OPT_LOGLEVEL },
         { "language", required_argument, nullptr, OPT_LANGUAGE },
         { "datadir", required_argument, nullptr, OPT_DATADIR },
-        { "game", required_argument, nullptr, OPT_DATADIR },
+        { "mod", required_argument, nullptr, OPT_MOD },
         { "langdir", required_argument, nullptr, OPT_LANGDIR },
-        { "texpack", required_argument, nullptr, OPT_TEXPACK },
         { "vbo", required_argument, nullptr, OPT_VBO },
         { "models", required_argument, nullptr, OPT_MODELS },
         { nullptr, 0, nullptr, 0}
@@ -291,9 +273,8 @@ ParseArgsStatus CApplication::ParseArguments(int argc, char *argv[])
                 GetLogger()->Message("  -loglevel level     set log level to level (one of: trace, debug, info, warn, error, none)\n");
                 GetLogger()->Message("  -language lang      set language (one of: en, de, fr, pl, ru)\n");
                 GetLogger()->Message("  -datadir path       set custom data directory path\n");
-                GetLogger()->Message("  -game modid         run mod\n");
+                GetLogger()->Message("  -mod path           run mod\n");
                 GetLogger()->Message("  -langdir path       set custom language directory path\n");
-                GetLogger()->Message("  -texpack path       set path to custom texture pack\n");
                 GetLogger()->Message("  -vbo mode           set OpenGL VBO mode (one of: auto, enable, disable)\n");
                 GetLogger()->Message("  -models type        set which models to use (one of: old, new)\n");
                 return PARSE_ARGS_HELP;
@@ -361,19 +342,19 @@ ParseArgsStatus CApplication::ParseArguments(int argc, char *argv[])
             {
                 m_dataPath = optarg;
                 m_customDataPath = true;
-                GetLogger()->Info("Using custom datadir or running mod: '%s'\n", m_dataPath.c_str());
+                GetLogger()->Info("Using datadir: '%s'\n", optarg);
+                break;
+            }
+            case OPT_MOD:
+            {
+                m_gameData->AddMod(std::string(optarg));
+                GetLogger()->Info("Running mod from path: '%s'\n", optarg);
                 break;
             }
             case OPT_LANGDIR:
             {
                 m_langPath = optarg;
-                GetLogger()->Info("Using custom language dir: '%s'\n", m_langPath.c_str());
-                break;
-            }
-            case OPT_TEXPACK:
-            {
-                m_texPackPath = optarg;
-                GetLogger()->Info("Using texturepack: '%s'\n", m_texPackPath.c_str());
+                GetLogger()->Info("Using language dir: '%s'\n", m_langPath.c_str());
                 break;
             }
             case OPT_VBO:
@@ -429,14 +410,14 @@ bool CApplication::Create()
 
     GetLogger()->Info("Creating CApplication\n");
 
-    if (!GetProfile().InitCurrentDirectory())
+    if (!GetProfile().Init())
     {
         GetLogger()->Warn("Config not found. Default values will be used!\n");
         defaultValues = true;
     }
     else
     {
-        if (!m_customDataPath && GetProfile().GetLocalProfileString("Resources", "Data", path))
+        if (!m_customDataPath && GetProfile().GetStringProperty("Resources", "Data", path))
             m_dataPath = path;
     }
 
@@ -450,8 +431,11 @@ bool CApplication::Create()
         m_exitCode = 1;
         return false;
     }
+    
+    m_gameData->SetDataDir(std::string(m_dataPath));
+    m_gameData->Init();
 
-    if (GetProfile().GetLocalProfileString("Language", "Lang", path)) {
+    if (GetProfile().GetStringProperty("Language", "Lang", path)) {
         Language language;
         if (ParseLanguage(path, language)) {
             m_language = language;
@@ -472,24 +456,8 @@ bool CApplication::Create()
     #endif
 
     m_sound->Create();
-
-    if (!m_customDataPath && GetProfile().GetLocalProfileString("Resources", "Sound", path))
-    {
-        m_sound->CacheAll(path);
-    }
-    else
-    {
-        m_sound->CacheAll(GetDataSubdirPath(DIR_SOUND));
-    }
-
-    if (!m_customDataPath && GetProfile().GetLocalProfileString("Resources", "Music", path))
-    {
-        m_sound->AddMusicFiles(path);
-    }
-    else
-    {
-        m_sound->AddMusicFiles(GetDataSubdirPath(DIR_MUSIC));
-    }
+    m_sound->CacheAll();
+    m_sound->AddMusicFiles();
 
     GetLogger()->Info("CApplication created successfully\n");
 
@@ -528,7 +496,7 @@ bool CApplication::Create()
 
     // load settings from profile
     int iValue;
-    if ( GetProfile().GetLocalProfileInt("Setup", "Resolution", iValue) )
+    if ( GetProfile().GetIntProperty("Setup", "Resolution", iValue) )
     {
         std::vector<Math::IntPoint> modes;
         GetVideoResolutionList(modes, true, true);
@@ -536,7 +504,7 @@ bool CApplication::Create()
             m_deviceConfig.size = modes.at(iValue);
     }
 
-    if ( GetProfile().GetLocalProfileInt("Setup", "Fullscreen", iValue) )
+    if ( GetProfile().GetIntProperty("Setup", "Fullscreen", iValue) )
     {
         m_deviceConfig.fullScreen = (iValue == 1);
     }
@@ -654,23 +622,14 @@ void CApplication::Destroy()
 {
     m_joystickEnabled = false;
 
-    if (m_robotMain != nullptr)
-    {
-        delete m_robotMain;
-        m_robotMain = nullptr;
-    }
+    delete m_robotMain;
+    m_robotMain = nullptr;
 
-    if (m_sound != nullptr)
-    {
-        delete m_sound;
-        m_sound = nullptr;
-    }
+    delete m_sound;
+    m_sound = nullptr;
 
-    if (m_modelManager != nullptr)
-    {
-        delete m_modelManager;
-        m_modelManager = nullptr;
-    }
+    delete m_modelManager;
+    m_modelManager = nullptr;
 
     if (m_engine != nullptr)
     {
@@ -1630,59 +1589,6 @@ void CApplication::SetJoystickEnabled(bool enable)
 bool CApplication::GetJoystickEnabled() const
 {
     return m_joystickEnabled;
-}
-
-std::string CApplication::GetDataDirPath() const
-{
-    return m_dataPath;
-}
-
-std::string CApplication::GetDataSubdirPath(DataDir stdDir) const
-{
-    int index = static_cast<int>(stdDir);
-    assert(index >= 0 && index < DIR_MAX);
-    std::stringstream str;
-    str << m_dataPath;
-    str << "/";
-    str << m_standardDataDirs[index];
-    return str.str();
-}
-
-std::string CApplication::GetDataFilePath(DataDir stdDir, const std::string& subpath) const
-{
-    int index = static_cast<int>(stdDir);
-    assert(index >= 0 && index < DIR_MAX);
-    std::stringstream str;
-    str << m_dataPath;
-    str << "/";
-    str << m_standardDataDirs[index];
-    if (stdDir == DIR_HELP)
-    {
-        str << "/";
-        str << GetLanguageChar();
-    }
-    str << "/";
-    str << subpath;
-    return str.str();
-}
-
-std::string CApplication::GetTexPackFilePath(const std::string& textureName) const
-{
-    std::stringstream str;
-
-    if (! m_texPackPath.empty())
-    {
-        str << m_texPackPath;
-        str << "/";
-        str << textureName;
-        if (! boost::filesystem::exists(str.str()))
-        {
-            GetLogger()->Trace("Texture '%s' not in texpack\n", textureName.c_str());
-            str.str("");
-        }
-    }
-
-    return str.str();
 }
 
 Language CApplication::GetLanguage() const

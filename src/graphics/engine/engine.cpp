@@ -19,6 +19,7 @@
 #include "graphics/engine/engine.h"
 
 #include "app/app.h"
+#include "app/gamedata.h"
 
 #include "common/image.h"
 #include "common/key.h"
@@ -423,9 +424,20 @@ void CEngine::FrameUpdate()
 
 bool CEngine::WriteScreenShot(const std::string& fileName, int width, int height)
 {
-    // TODO write screenshot: not very important for now
-    GetLogger()->Debug("CEngine::WriteSceenShot(): stub!\n");
-    return true;
+    void *pixels = m_device->GetFrameBufferPixels();
+    CImage img({width,height});
+
+    img.SetDataPixels(pixels);
+    img.flipVertically();
+
+    if ( img.SavePNG(fileName.c_str()) ){
+       GetLogger()->Info("Save SceenShot Saved Successfully!\n");
+       return true;
+    }
+    else{
+       GetLogger()->Error("%s!\n",img.GetError().c_str());
+       return false;
+    }   
 }
 
 bool CEngine::GetPause()
@@ -2197,33 +2209,12 @@ Texture CEngine::CreateTexture(const std::string& texName, const TextureCreatePa
 
     if (image == nullptr)
     {
-        bool loadedFromTexPack = false;
-
-        std::string texPackName = m_app->GetTexPackFilePath(texName);
-        if (! texPackName.empty())
+        if (! img.Load(CGameData::GetInstancePointer()->GetFilePath(DIR_TEXTURE, texName)))
         {
-            if (img.Load(texPackName))
-            {
-                loadedFromTexPack = true;
-            }
-            else
-            {
-                std::string error = img.GetError();
-                GetLogger()->Error("Couldn't load texture '%s' from texpack: %s, blacklisting the texpack path\n",
-                                   texName.c_str(), error.c_str());
-                m_texBlacklist.insert(texPackName);
-            }
-        }
-
-        if (!loadedFromTexPack)
-        {
-            if (! img.Load(m_app->GetDataFilePath(DIR_TEXTURE, texName)))
-            {
-                std::string error = img.GetError();
-                GetLogger()->Error("Couldn't load texture '%s': %s, blacklisting\n", texName.c_str(), error.c_str());
-                m_texBlacklist.insert(texName);
-                return Texture(); // invalid texture
-            }
+            std::string error = img.GetError();
+            GetLogger()->Error("Couldn't load texture '%s': %s, blacklisting\n", texName.c_str(), error.c_str());
+            m_texBlacklist.insert(texName);
+            return Texture(); // invalid texture
         }
 
         image = &img;
@@ -2386,7 +2377,7 @@ bool CEngine::ChangeTextureColor(const std::string& texName,
 
 
     CImage img;
-    if (! img.Load(m_app->GetDataFilePath(DIR_TEXTURE, texName)))
+    if (! img.Load(CGameData::GetInstancePointer()->GetFilePath(DIR_TEXTURE, texName)))
     {
         std::string error = img.GetError();
         GetLogger()->Error("Couldn't load texture '%s': %s, blacklisting\n", texName.c_str(), error.c_str());
@@ -3084,64 +3075,63 @@ void CEngine::Draw3DScene()
 
     m_app->StartPerformanceCounter(PCNT_RENDER_TERRAIN);
 
-    // Draw terrain with shadows, if shadows enabled
-    if (m_shadowVisible)
+    // Draw terrain 
+    
+    m_lightMan->UpdateDeviceLights(ENG_OBJTYPE_TERRAIN);
+
+    for (int objRank = 0; objRank < static_cast<int>(m_objects.size()); objRank++)
     {
-        m_lightMan->UpdateDeviceLights(ENG_OBJTYPE_TERRAIN);
+        if (! m_objects[objRank].used)
+            continue;
 
-        for (int objRank = 0; objRank < static_cast<int>(m_objects.size()); objRank++)
+        if (m_objects[objRank].type != ENG_OBJTYPE_TERRAIN)
+            continue;
+
+        if (! m_objects[objRank].drawWorld)
+            continue;
+
+        m_device->SetTransform(TRANSFORM_WORLD, m_objects[objRank].transform);
+
+        if (! IsVisible(objRank))
+            continue;
+
+        int baseObjRank = m_objects[objRank].baseObjRank;
+        if (baseObjRank == -1)
+            continue;
+
+        assert(baseObjRank >= 0 && baseObjRank < static_cast<int>( m_baseObjects.size() ));
+
+        EngineBaseObject& p1 = m_baseObjects[baseObjRank];
+        if (! p1.used)
+            continue;
+
+        for (int l2 = 0; l2 < static_cast<int>( p1.next.size() ); l2++)
         {
-            if (! m_objects[objRank].used)
-                continue;
+            EngineBaseObjTexTier& p2 = p1.next[l2];
 
-            if (m_objects[objRank].type != ENG_OBJTYPE_TERRAIN)
-                continue;
+            SetTexture(p2.tex1, 0);
+            SetTexture(p2.tex2, 1);
 
-            if (! m_objects[objRank].drawWorld)
-                continue;
-
-            m_device->SetTransform(TRANSFORM_WORLD, m_objects[objRank].transform);
-
-            if (! IsVisible(objRank))
-                continue;
-
-            int baseObjRank = m_objects[objRank].baseObjRank;
-            if (baseObjRank == -1)
-                continue;
-
-            assert(baseObjRank >= 0 && baseObjRank < static_cast<int>( m_baseObjects.size() ));
-
-            EngineBaseObject& p1 = m_baseObjects[baseObjRank];
-            if (! p1.used)
-                continue;
-
-            for (int l2 = 0; l2 < static_cast<int>( p1.next.size() ); l2++)
+            for (int l3 = 0; l3 < static_cast<int>( p2.next.size() ); l3++)
             {
-                EngineBaseObjTexTier& p2 = p1.next[l2];
+                EngineBaseObjLODTier& p3 = p2.next[l3];
 
-                SetTexture(p2.tex1, 0);
-                SetTexture(p2.tex2, 1);
-
-                for (int l3 = 0; l3 < static_cast<int>( p2.next.size() ); l3++)
+                for (int l4 = 0; l4 < static_cast<int>( p3.next.size() ); l4++)
                 {
-                    EngineBaseObjLODTier& p3 = p2.next[l3];
+                    EngineBaseObjDataTier& p4 = p3.next[l4];
 
-                    for (int l4 = 0; l4 < static_cast<int>( p3.next.size() ); l4++)
-                    {
-                        EngineBaseObjDataTier& p4 = p3.next[l4];
+                    SetMaterial(p4.material);
+                    SetState(p4.state);
 
-                        SetMaterial(p4.material);
-                        SetState(p4.state);
-
-                        DrawObject(p4);
-                    }
+                    DrawObject(p4);
                 }
             }
         }
-
-        // Draws the shadows
-        DrawShadow();
     }
+
+    // Draws the shadows , if shadows enabled
+    if (m_shadowVisible)
+        DrawShadow();
 
     m_app->StopPerformanceCounter(PCNT_RENDER_TERRAIN);
 

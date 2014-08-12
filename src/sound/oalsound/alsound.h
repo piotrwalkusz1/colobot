@@ -78,8 +78,10 @@ public:
     void SuspendMusic();
     void StopMusic(float fadeTime=2.0f);
     bool IsPlayingMusic();
-    bool PlayPauseMusic(const std::string &filename);
+    bool PlayPauseMusic(const std::string &filename, bool repeat);
     void StopPauseMusic();
+
+    bool CheckChannel(int &channel);
 
 private:
     void CleanUp();
@@ -89,6 +91,7 @@ private:
     bool m_enabled;
     float m_audioVolume;
     float m_musicVolume;
+    unsigned int m_channels_limit;
     ALCdevice* m_device;
     ALCcontext* m_context;
     std::map<Sound, Buffer*> m_sounds;

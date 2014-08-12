@@ -1,9 +1,27 @@
+// * This file is part of the COLOBOT source code
+// * Copyright (C) 2001-2008, Daniel ROUX & EPSITEC SA, www.epsitec.ch
+// * Copyright (C) 2012-2014, Polish Portal of Colobot (PPC)
+// *
+// * This program is free software: you can redistribute it and/or modify
+// * it under the terms of the GNU General Public License as published by
+// * the Free Software Foundation, either version 3 of the License, or
+// * (at your option) any later version.
+// *
+// * This program is distributed in the hope that it will be useful,
+// * but WITHOUT ANY WARRANTY; without even the implied warranty of
+// * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// * GNU General Public License for more details.
+// *
+// * You should have received a copy of the GNU General Public License
+// * along with this program. If not, see  http://www.gnu.org/licenses/.
+
 #include "graphics/engine/model_manager.h"
 
 #include "app/app.h"
+#include "app/gamedata.h"
 
 #include "common/logger.h"
-#include <common/stringutils.h>
+#include "common/stringutils.h"
 
 #include "graphics/engine/engine.h"
 #include "graphics/engine/model_io.h"
@@ -34,7 +52,7 @@ bool CModelManager::LoadModel(const std::string& fileName, bool mirrored)
     GetLogger()->Debug("Loading model '%s'\n", actualFileName.c_str());
 
     DataDir dir = m_useNewModels ? DIR_MODEL_NEW : DIR_MODEL;
-    std::string filePath = CApplication::GetInstance().GetDataFilePath(dir, actualFileName);
+    std::string filePath = CGameData::GetInstancePointer()->GetFilePath(DIR_MODEL, actualFileName);
 
     CModelIO::SetPrintDebugInfo(CApplication::GetInstance().IsDebugModeActive(DEBUG_MODELS));
 

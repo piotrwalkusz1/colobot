@@ -18,6 +18,7 @@
 #include "ui/maindialog.h"
 
 #include "app/app.h"
+#include "app/gamedata.h"
 #include "app/system.h"
 
 #include "common/config.h"
@@ -156,9 +157,6 @@ CMainDialog::CMainDialog()
     m_bMovies        = true;
     m_bNiceReset     = true;
     m_bHimselfDamage = true;
-/* TODO: #if _TEEN
-    m_bCameraScroll  = false;
-#else*/
     m_bCameraScroll  = true;
 
     m_bCameraInvertX = false;
@@ -246,9 +244,6 @@ void CMainDialog::ChangePhase(Phase phase)
         pos.y  = 0.10f;
         ddim.x = 0.30f;
         ddim.y = 0.80f;
-        /* TODO: #if _TEEN
-           pw = m_interface->CreateWindows(pos, ddim, 12, EVENT_WINDOW5);
-#else*/
         pw = m_interface->CreateWindows(pos, ddim, 10, EVENT_WINDOW5);
 
         GetResource(RES_TEXT, RT_TITLE_INIT, name);
@@ -264,22 +259,7 @@ void CMainDialog::ChangePhase(Phase phase)
         ddim.x = 0.30f;
         ddim.y = 0.30f;
         pw->CreateGroup(pos, ddim, 4, EVENT_INTERFACE_GLINTr);  // blue corner
-
-        /* TODO: #if _SCHOOL
-           ddim.x = 0.20f;
-           ddim.y = dim.y*2.4f;
-           pos.x = 0.40f;
-           pos.y = oy+sy*7.9f;
-           pg = pw->CreateGroup(pos, ddim, 24, EVENT_LABEL1);  // orange
-           pg->SetState(STATE_SHADOW);
-           pos.y = oy+sy*3.9f;
-           pg = pw->CreateGroup(pos, ddim, 25, EVENT_LABEL1);  // orange
-           pg->SetState(STATE_SHADOW);
-           ddim.y = dim.y*1.2f;
-           pos.y = oy+sy*1.9f;
-           pg = pw->CreateGroup(pos, ddim, 26, EVENT_LABEL1);  // red
-           pg->SetState(STATE_SHADOW);
-#else */
+        
         ddim.x = 0.20f;
         ddim.y = dim.y*2.4f;
         pos.x = 0.40f;
@@ -299,26 +279,7 @@ void CMainDialog::ChangePhase(Phase phase)
         pos.y = oy+sy*1.9f;
         pg = pw->CreateGroup(pos, ddim, 26, EVENT_LABEL1);  // red
         pg->SetState(STATE_SHADOW);
-
-        /* TODO: #if _SCHOOL
-           ddim.x = 0.18f;
-           ddim.y = dim.y*1;
-           pos.x = 0.41f;
-           pos.y = oy+sy*9.1f;
-           pb = pw->CreateButton(pos, ddim, -1, EVENT_INTERFACE_TRAINER);
-           pb->SetState(STATE_SHADOW);
-
-           pos.y = oy+sy*8.0f;
-#if _TEEN
-pb = pw->CreateButton(pos, ddim, -1, EVENT_INTERFACE_TEEN);
-#else
-pb = pw->CreateButton(pos, ddim, -1, EVENT_INTERFACE_DEFI);
-#endif
-#if _CEEBOTDEMO
-pb->ClearState(STATE_ENABLE);
-#endif
-pb->SetState(STATE_SHADOW);
-#else */
+        
         ddim.x = 0.18f;
         ddim.y = dim.y*1;
         pos.x = 0.41f;
@@ -355,20 +316,14 @@ pb->SetState(STATE_SHADOW);
         pb->SetState(STATE_SHADOW);
 
         #if DEV_BUILD
-        // TODO: #if !_DEMO & !_SCHOOL
         if ( m_accessEnable && m_accessUser )
         {
             pos.x  = 447.0f/640.0f;
             pos.y  = 313.0f/480.0f;
             ddim.x = 0.09f;
-            /*#if _POLISH
-              pos.x  -=  5.0f/640.0f;
-              ddim.x += 10.0f/640.0f;
-#endif*/
             pb = pw->CreateButton(pos, ddim, -1, EVENT_INTERFACE_USER);
             pb->SetState(STATE_SHADOW);
         }
-        // #endif
         #endif
 
         /*pos.x  = 139.0f/640.0f;
@@ -406,19 +361,6 @@ pb->SetState(STATE_SHADOW);
         pw = m_interface->CreateWindows(pos, ddim, 12, EVENT_WINDOW5);
         GetResource(RES_TEXT, RT_TITLE_NAME, name);
         pw->SetName(name);
-
-        /* TODO: #if _NEWLOOK
-           pos.x  =  80.0f/640.0f;
-           pos.y  =  93.0f/480.0f;
-           ddim.x = 285.0f/640.0f;
-           ddim.y = 266.0f/480.0f;
-           pg = pw->CreateGroup(pos, ddim, 23, EVENT_LABEL1);  // blue
-           pg->SetState(STATE_SHADOW);
-           pos.x  = 372.0f/640.0f;
-           ddim.x = 188.0f/640.0f;
-           pg = pw->CreateGroup(pos, ddim, 26, EVENT_LABEL1);  // violet
-           pg->SetState(STATE_SHADOW);
-#endif*/
 
         pos.x  = 0.10f;
         pos.y  = 0.40f;
@@ -526,15 +468,6 @@ pb->SetState(STATE_SHADOW);
         pw = m_interface->CreateWindows(pos, ddim, 12, EVENT_WINDOW5);
         GetResource(RES_TEXT, RT_TITLE_PERSO, name);
         pw->SetName(name);
-
-        /* TODO: #if _NEWLOOK
-           pos.x  =  95.0f/640.0f;
-           pos.y  =  66.0f/480.0f;
-           ddim.x = 443.0f/640.0f;
-           ddim.y =  42.0f/480.0f;
-           pg = pw->CreateGroup(pos, ddim, 26, EVENT_LABEL1);  // violet
-           pg->SetState(STATE_SHADOW);
-#endif*/
 
         pos.x  = 0.10f;
         pos.y  = 0.40f;
@@ -770,7 +703,6 @@ pb->SetState(STATE_SHADOW);
             m_phase == PHASE_DEFI    ||
             m_phase == PHASE_MISSION ||
             m_phase == PHASE_FREE    ||
-            m_phase == PHASE_TEEN    ||
             m_phase == PHASE_USER    )
     {
         if ( m_phase == PHASE_TRAINER )  m_index = 0;
@@ -778,7 +710,6 @@ pb->SetState(STATE_SHADOW);
         if ( m_phase == PHASE_MISSION )  m_index = 2;
         if ( m_phase == PHASE_FREE    )  m_index = 3;
         if ( m_phase == PHASE_USER    )  m_index = 4;
-        if ( m_phase == PHASE_TEEN    )  m_index = 6;
 
         if ( m_phase == PHASE_FREE )
         {
@@ -791,7 +722,6 @@ pb->SetState(STATE_SHADOW);
         if ( m_phase == PHASE_DEFI    )  strcpy(m_sceneName, "defi" );
         if ( m_phase == PHASE_MISSION )  strcpy(m_sceneName, "scene");
         if ( m_phase == PHASE_FREE    )  strcpy(m_sceneName, "free");
-        if ( m_phase == PHASE_TEEN    )  strcpy(m_sceneName, "teen");
         if ( m_phase == PHASE_USER    )  strcpy(m_sceneName, "user");
 
         ReadGamerInfo();
@@ -806,33 +736,9 @@ pb->SetState(STATE_SHADOW);
         if ( m_phase == PHASE_DEFI    )  res = RT_TITLE_DEFI;
         if ( m_phase == PHASE_MISSION )  res = RT_TITLE_MISSION;
         if ( m_phase == PHASE_FREE    )  res = RT_TITLE_FREE;
-        if ( m_phase == PHASE_TEEN    )  res = RT_TITLE_TEEN;
         if ( m_phase == PHASE_USER    )  res = RT_TITLE_USER;
         GetResource(RES_TEXT, res, name);
         pw->SetName(name);
-
-        /* TODO: #if _NEWLOOK
-           pos.x  = 100.0f/640.0f;
-           pos.y  = 226.0f/480.0f;
-           ddim.x = 216.0f/640.0f;
-           ddim.y = 160.0f/480.0f;
-           pg = pw->CreateGroup(pos, ddim, 23, EVENT_LABEL1);  // blue
-           pg->SetState(STATE_SHADOW);
-           pos.x  = 322.0f/640.0f;
-           pg = pw->CreateGroup(pos, ddim, 24, EVENT_LABEL1);  // cyan
-           pg->SetState(STATE_SHADOW);
-
-           pos.x  = 100.0f/640.0f;
-           pos.y  = 122.0f/480.0f;
-           ddim.x = 438.0f/640.0f;
-           ddim.y =  98.0f/480.0f;
-           pg = pw->CreateGroup(pos, ddim, 25, EVENT_LABEL1);  // green
-           pg->SetState(STATE_SHADOW);
-           pos.y  =  66.0f/480.0f;
-           ddim.y =  42.0f/480.0f;
-           pg = pw->CreateGroup(pos, ddim, 26, EVENT_LABEL1);  // violet
-           pg->SetState(STATE_SHADOW);
-#endif */
 
         pos.x  = 0.10f;
         pos.y  = 0.40f;
@@ -854,7 +760,6 @@ pb->SetState(STATE_SHADOW);
         if ( m_phase == PHASE_DEFI    )  res = RT_PLAY_CHAPd;
         if ( m_phase == PHASE_MISSION )  res = RT_PLAY_CHAPm;
         if ( m_phase == PHASE_FREE    )  res = RT_PLAY_CHAPf;
-        if ( m_phase == PHASE_TEEN    )  res = RT_PLAY_CHAPte;
         if ( m_phase == PHASE_USER    )  res = RT_PLAY_CHAPu;
         GetResource(RES_TEXT, res, name);
         pl = pw->CreateLabel(pos, ddim, 0, EVENT_LABEL11, name);
@@ -877,7 +782,6 @@ pb->SetState(STATE_SHADOW);
         if ( m_phase == PHASE_DEFI    )  res = RT_PLAY_LISTd;
         if ( m_phase == PHASE_MISSION )  res = RT_PLAY_LISTm;
         if ( m_phase == PHASE_FREE    )  res = RT_PLAY_LISTf;
-        if ( m_phase == PHASE_TEEN    )  res = RT_PLAY_LISTk;
         if ( m_phase == PHASE_USER    )  res = RT_PLAY_LISTu;
         GetResource(RES_TEXT, res, name);
         pl = pw->CreateLabel(pos, ddim, 0, EVENT_LABEL12, name);
@@ -914,8 +818,7 @@ pb->SetState(STATE_SHADOW);
 
         // Button displays the "soluce":
         if ( m_phase != PHASE_TRAINER &&
-                m_phase != PHASE_FREE    &&
-                m_phase != PHASE_TEEN    )
+                m_phase != PHASE_FREE    )
         {
             pos.x = ox+sx*9.5f;
             pos.y = oy+sy*5.8f;
@@ -1043,80 +946,6 @@ pb->SetState(STATE_SHADOW);
         pos.y  = 0.76f;
         ddim.y = 0.05f;
         pw->CreateGroup(pos, ddim, 3, EVENT_NULL);  // transparent -> gray
-
-        /* TODO: #if _NEWLOOK
-           if ( m_phase == PHASE_SETUPd  || // setup/display ?
-           m_phase == PHASE_SETUPds )
-           {
-           pos.x  = 100.0f/640.0f;
-           pos.y  = 130.0f/480.0f;
-           ddim.x = 216.0f/640.0f;
-           ddim.y = 212.0f/480.0f;
-           pg = pw->CreateGroup(pos, ddim, 23, EVENT_LABEL1);  // blue
-           pg->SetState(STATE_SHADOW);
-           pos.x  = 324.0f/640.0f;
-           pg = pw->CreateGroup(pos, ddim, 24, EVENT_LABEL1);  // cyan
-           pg->SetState(STATE_SHADOW);
-           }
-           if ( m_phase == PHASE_SETUPg  || // setup/graphic ?
-           m_phase == PHASE_SETUPgs )
-           {
-           pos.x  = 100.0f/640.0f;
-           pos.y  = 130.0f/480.0f;
-           ddim.x = 174.0f/640.0f;
-           ddim.y = 212.0f/480.0f;
-           pg = pw->CreateGroup(pos, ddim, 23, EVENT_LABEL1);  // blue
-           pg->SetState(STATE_SHADOW);
-           pos.x  = 282.0f/640.0f;
-           ddim.x = 258.0f/640.0f;
-           pg = pw->CreateGroup(pos, ddim, 24, EVENT_LABEL1);  // cyan
-           pg->SetState(STATE_SHADOW);
-           }
-           if ( m_phase == PHASE_SETUPp  || // setup/game ?
-           m_phase == PHASE_SETUPps )
-           {
-           pos.x  = 100.0f/640.0f;
-           pos.y  = 130.0f/480.0f;
-           ddim.x = 226.0f/640.0f;
-           ddim.y = 212.0f/480.0f;
-           pg = pw->CreateGroup(pos, ddim, 23, EVENT_LABEL1);  // blue
-           pg->SetState(STATE_SHADOW);
-           pos.x  = 334.0f/640.0f;
-           ddim.x = 206.0f/640.0f;
-           pg = pw->CreateGroup(pos, ddim, 24, EVENT_LABEL1);  // cyan
-           pg->SetState(STATE_SHADOW);
-           }
-           if ( m_phase == PHASE_SETUPc  || // setup/command ?
-           m_phase == PHASE_SETUPcs )
-           {
-           pos.x  = 100.0f/640.0f;
-           pos.y  = 125.0f/480.0f;
-           ddim.x = 440.0f/640.0f;
-           ddim.y = 222.0f/480.0f;
-           pg = pw->CreateGroup(pos, ddim, 23, EVENT_LABEL1);  // blue
-           pg->SetState(STATE_SHADOW);
-           }
-           if ( m_phase == PHASE_SETUPs  || // setup/sound ?
-           m_phase == PHASE_SETUPss )
-           {
-           pos.x  = 100.0f/640.0f;
-           pos.y  = 130.0f/480.0f;
-           ddim.x = 216.0f/640.0f;
-           ddim.y = 212.0f/480.0f;
-           pg = pw->CreateGroup(pos, ddim, 23, EVENT_LABEL1);  // blue
-           pg->SetState(STATE_SHADOW);
-           pos.x  = 324.0f/640.0f;
-           pg = pw->CreateGroup(pos, ddim, 24, EVENT_LABEL1);  // cyan
-           pg->SetState(STATE_SHADOW);
-           }
-
-           pos.x  = 100.0f/640.0f;
-           pos.y  =  66.0f/480.0f;
-           ddim.x = 440.0f/640.0f;
-           ddim.y =  42.0f/480.0f;
-           pg = pw->CreateGroup(pos, ddim, 26, EVENT_LABEL1);  // violet
-        pg->SetState(STATE_SHADOW);
-#endif */
 
         ddim.x = 0.78f/5-0.01f;
         ddim.y = 0.06f;
@@ -1348,10 +1177,7 @@ pb->SetState(STATE_SHADOW);
         ddim.y = dim.y*1;
         pos.x = ox+sx*10;
         pos.y = oy+sy*2;
-        /* TODO: #if _POLISH
-           ddim.x += 20.0f/640.0f;
-           pos.x -= 20.0f/640.0f*3.0f;
-#endif*/
+        
         pb = pw->CreateButton(pos, ddim, -1, EVENT_INTERFACE_MIN);
         pb->SetState(STATE_SHADOW);
         pos.x += ddim.x;
@@ -1374,13 +1200,7 @@ pb->SetState(STATE_SHADOW);
         //?     pc = pw->CreateCheck(pos, ddim, -1, EVENT_INTERFACE_TOTO);
         //?     pc->SetState(STATE_SHADOW);
         //?     pos.y -= 0.048f;
-        /*TODO: #if _SCHOOL
-#if _EDU
-pc = pw->CreateCheck(pos, ddim, -1, EVENT_INTERFACE_SOLUCE4);
-pc->SetState(STATE_SHADOW);
-pos.y -= 0.048f;
-#endif
-#else*/
+        
         pc = pw->CreateCheck(pos, ddim, -1, EVENT_INTERFACE_MOVIES);
         pc->SetState(STATE_SHADOW);
         pos.y -= 0.048f;
@@ -1502,7 +1322,6 @@ pos.y -= 0.048f;
         pl = pw->CreateLabel(pos, ddim, 0, EVENT_LABEL1, name);
         pl->SetTextAlign(Gfx::TEXT_ALIGN_LEFT);
 
-        // TODO: #if (_FULL | _NET) & _SOUNDTRACKS
         pos.x = ox+sx*3;
         pos.y = 0.40f;
         ddim.x = dim.x*4.0f;
@@ -1515,7 +1334,6 @@ pos.y -= 0.048f;
         GetResource(RES_EVENT, EVENT_INTERFACE_VOLMUSIC, name);
         pl = pw->CreateLabel(pos, ddim, 0, EVENT_LABEL2, name);
         pl->SetTextAlign(Gfx::TEXT_ALIGN_LEFT);
-        // #endif
 
         ddim.x = dim.x*3;
         ddim.y = dim.y*1;
@@ -1552,15 +1370,6 @@ pos.y -= 0.048f;
         ddim.x = 0.50f;
         ddim.y = 0.50f;
         pw->CreateGroup(pos, ddim, 4, EVENT_INTERFACE_GLINTr);  // blue corner
-
-        /* TODO: #if _NEWLOOK
-           pos.x  = 100.0f/640.0f;
-           pos.y  =  66.0f/480.0f;
-           ddim.x = 438.0f/640.0f;
-           ddim.y =  42.0f/480.0f;
-           pg = pw->CreateGroup(pos, ddim, 26, EVENT_LABEL1);  // violet
-           pg->SetState(STATE_SHADOW);
-#endif */
 
         pos.x  = 290.0f/640.0f;
         ddim.x = 245.0f/640.0f;
@@ -1637,15 +1446,6 @@ pos.y -= 0.048f;
         ddim.y = 0.50f;
         pw->CreateGroup(pos, ddim, 4, EVENT_INTERFACE_GLINTr);  // blue corner
 
-        /* TODO: #if _NEWLOOK
-           pos.x  = 100.0f/640.0f;
-           pos.y  =  66.0f/480.0f;
-           ddim.x = 438.0f/640.0f;
-           ddim.y =  42.0f/480.0f;
-           pg = pw->CreateGroup(pos, ddim, 26, EVENT_LABEL1);  // violet
-           pg->SetState(STATE_SHADOW);
-#endif*/
-
         pos.x  = 290.0f/640.0f;
         ddim.x = 245.0f/640.0f;
 
@@ -1705,9 +1505,6 @@ pos.y -= 0.048f;
         pos.y  = 0.10f;
         ddim.x = 0.30f;
         ddim.y = 0.80f;
-        /*TODO: #if _TEEN
-          pw = m_interface->CreateWindows(pos, ddim, 12, EVENT_WINDOW5);
-#else*/
         pw = m_interface->CreateWindows(pos, ddim, 10, EVENT_WINDOW5);
 
         pw->SetName(" ");
@@ -1816,7 +1613,6 @@ pos.y -= 0.048f;
         ddim.y = 0.0f;
         pw = m_interface->CreateWindows(pos, ddim, -1, EVENT_WINDOW5);
 
-        // TODO: #if _FULL | _NET
         pos.x  =  80.0f/640.0f;
         pos.y  = 240.0f/480.0f;
         ddim.x = 490.0f/640.0f;
@@ -1829,54 +1625,6 @@ pos.y -= 0.048f;
         pe->SetFontSize(Gfx::FONT_SIZE_SMALL);
         pe->ReadText(std::string("help/") + m_app->GetLanguageChar() + std::string("/authors.txt"));
 
-        // #endif
-        /* TODO: #if _SCHOOL
-        #if _CEEBOTDEMO
-        pos.x  =  80.0f/640.0f;
-        pos.y  = 210.0f/480.0f;
-        ddim.x = 490.0f/640.0f;
-        ddim.y = 150.0f/480.0f;
-        #else
-        pos.x  =  80.0f/640.0f;
-        pos.y  = 200.0f/480.0f;
-        ddim.x = 490.0f/640.0f;
-        ddim.y = 150.0f/480.0f;
-        #endif
-        pe = pw->CreateEdit(pos, ddim, 0, EVENT_EDIT1);
-        pe->SetGenericMode(true);
-        pe->SetEditCap(false);
-        pe->SetHighlightCap(false);
-        pe->SetFontType(Gfx::FONT_COURIER);
-        pe->SetFontSize(Gfx::FONT_SIZE_SMALL);
-        pe->ReadText("help/authors.txt");*/
-
-        /* #if _DEMO
-        //?     pos.x  =  80.0f/640.0f;
-        //?     pos.y  = 240.0f/480.0f;
-        //?     ddim.x = 490.0f/640.0f;
-        //?     ddim.y = 110.0f/480.0f;
-        //?     pe = pw->CreateEdit(pos, ddim, 0, EVENT_EDIT1);
-        //?     pe->SetGenericMode(true);
-        //?     pe->SetEditCap(false);
-        //?     pe->SetHiliteCap(false);
-        //?     pe->SetFontType(Gfx::FONT_COURIER);
-        //?     pe->SetFontSize(Gfx::FONT_SIZE_SMALL);
-        //?     pe->ReadText("help/demo.txt");
-
-        //?     pos.x  =  80.0f/640.0f;
-        //?     pos.y  = 140.0f/480.0f;
-        //?     ddim.x = 490.0f/640.0f;
-        //?     ddim.y = 100.0f/480.0f;
-        //?     pe = pw->CreateEdit(pos, ddim, 0, EVENT_EDIT2);
-        //?     pe->SetGenericMode(true);
-        //?     pe->SetEditCap(false);
-        //?     pe->SetHiliteCap(false);
-        //?     pe->SetFontType(Gfx::FONT_COURIER);
-        //?     pe->SetFontSize(Gfx::FONT_SIZE_SMALL);
-        //?     pe->ReadText("help/authors.txt");
-#endif */
-
-        // TODO: #if !_DEMO
         pos.x  =  40.0f/640.0f;
         pos.y  =  83.0f/480.0f;
         ddim.x = 246.0f/640.0f;
@@ -1906,23 +1654,13 @@ pos.y -= 0.048f;
         pl = pw->CreateLabel(pos, ddim, 0, EVENT_LABEL4, name);
         pl->SetFontType(Gfx::FONT_COURIER);
         pl->SetFontSize(Gfx::FONT_SIZE_SMALL);
-        // #endif
-
-        /* TODO: #if _DEMO
-           pos.x  = 481.0f/640.0f;
-           pos.y  =  51.0f/480.0f;
-           ddim.x =  30.0f/640.0f;
-           ddim.y =  30.0f/480.0f;
-           pb = pw->CreateButton(pos, ddim, 49, EVENT_INTERFACE_ABORT);
-           pb->SetState(STATE_SHADOW);
-#else */
+        
         pos.x  = 306.0f/640.0f;
         pos.y  =  17.0f/480.0f;
         ddim.x =  30.0f/640.0f;
         ddim.y =  30.0f/480.0f;
         pb = pw->CreateButton(pos, ddim, 49, EVENT_INTERFACE_ABORT);
         pb->SetState(STATE_SHADOW);
-        // #endif
 
         m_engine->SetBackground("generico.png",
                 Gfx::Color(0.0f, 0.0f, 0.0f, 0.0f),
@@ -1939,7 +1677,6 @@ pos.y -= 0.048f;
             m_phase == PHASE_DEFI    ||
             m_phase == PHASE_MISSION ||
             m_phase == PHASE_FREE    ||
-            m_phase == PHASE_TEEN    ||
             m_phase == PHASE_USER    ||
             m_phase == PHASE_SETUPd  ||
             m_phase == PHASE_SETUPg  ||
@@ -1949,24 +1686,10 @@ pos.y -= 0.048f;
             m_phase == PHASE_READ    ||
             m_phase == PHASE_LOADING )
     {
-        /*TODO: #if _SCHOOL
-#if _TEEN
-pos.x  =  50.0f/640.0f;
-pos.y  = 430.0f/480.0f;
-ddim.x = 200.0f/640.0f;
-ddim.y =  10.0f/480.0f;
-#else
-pos.x  = 450.0f/640.0f;
-pos.y  =   0.0f/480.0f;
-ddim.x = 170.0f/640.0f;
-ddim.y =   9.0f/480.0f;
-#endif
-#else */
         pos.x  = 540.0f/640.0f;
         pos.y  =   9.0f/480.0f;
         ddim.x =  90.0f/640.0f;
         ddim.y =  10.0f/480.0f;
-        //#endif
         //GetResource(RES_TEXT, RT_VERSION_ID, name);
         pl = pw->CreateLabel(pos, ddim, 0, EVENT_LABEL1, COLOBOT_VERSION_DISPLAY);
         pl->SetFontType(Gfx::FONT_COURIER);
@@ -2074,9 +1797,10 @@ bool CMainDialog::EventProcess(const Event &event)
         {
             m_shotDelay --;
             if ( m_shotDelay == 0 )
-            {
-                m_engine->WriteScreenShot(m_shotName, 320, 240);
-                //?             m_engine->WriteScreenShot(m_shotName, 160, 120);
+            {   
+                Math::IntPoint windowSize = m_engine->GetWindowSize();
+
+                m_engine->WriteScreenShot(m_shotName, windowSize.x, windowSize.y);
             }
         }
 
@@ -2214,10 +1938,6 @@ bool CMainDialog::EventProcess(const Event &event)
 
             case EVENT_INTERFACE_FREE:
                 m_main->ChangePhase(PHASE_FREE);
-                break;
-
-            case EVENT_INTERFACE_TEEN:
-                m_main->ChangePhase(PHASE_TEEN);
                 break;
 
             case EVENT_INTERFACE_USER:
@@ -2426,7 +2146,6 @@ bool CMainDialog::EventProcess(const Event &event)
             m_phase == PHASE_DEFI    ||
             m_phase == PHASE_MISSION ||
             m_phase == PHASE_FREE    ||
-            m_phase == PHASE_TEEN    ||
             m_phase == PHASE_USER    )
     {
         pw = static_cast<CWindow*>(m_interface->SearchControl(EVENT_WINDOW5));
@@ -2445,7 +2164,6 @@ bool CMainDialog::EventProcess(const Event &event)
             m_phase == PHASE_DEFI    ||
             m_phase == PHASE_MISSION ||
             m_phase == PHASE_FREE    ||
-            m_phase == PHASE_TEEN    ||
             m_phase == PHASE_USER    )
     {
         switch( event.type )
@@ -3088,7 +2806,6 @@ void CMainDialog::GlintMove()
             m_phase == PHASE_TRAINER ||
             m_phase == PHASE_MISSION ||
             m_phase == PHASE_FREE    ||
-            m_phase == PHASE_TEEN    ||
             m_phase == PHASE_USER    )
     {
         pg = static_cast<CGroup*>(pw->SearchControl(EVENT_INTERFACE_GLINTl));
@@ -3225,8 +2942,6 @@ Math::Vector SoundRand()
 
 void CMainDialog::FrameParticle(float rTime)
 {
-    /* TODO: #if _NEWLOOK
-#else */
     Math::Vector    pos, speed;
     Math::Point     dim;
     float       *pParti, *pGlint;
@@ -3315,7 +3030,6 @@ void CMainDialog::FrameParticle(float rTime)
             m_phase == PHASE_DEFI    ||
             m_phase == PHASE_MISSION ||
             m_phase == PHASE_FREE    ||
-            m_phase == PHASE_TEEN    ||
             m_phase == PHASE_USER    ||
             m_phase == PHASE_SETUPd  ||
             m_phase == PHASE_SETUPg  ||
@@ -3588,7 +3302,7 @@ void CMainDialog::BuildSceneName(std::string &filename, char *base, int rank)
     {
         rankStream << std::setfill('0') << std::setw(3) << rank;
         filename = base + rankStream.str() + ".txt";
-        filename = CApplication::GetInstance().GetDataFilePath(DIR_LEVEL, filename);
+        filename = CGameData::GetInstancePointer()->GetFilePath(DIR_LEVEL, filename);
     }
 }
 
@@ -3827,7 +3541,7 @@ void CMainDialog::NameSelect()
 
     GetGamerFace(m_main->GetGamerName());
 
-    GetProfile().SetLocalProfileString("Gamer", "LastName", m_main->GetGamerName());
+    GetProfile().SetStringProperty("Gamer", "LastName", m_main->GetGamerName());
 }
 
 // Creates a new player.
@@ -4664,7 +4378,6 @@ void CMainDialog::AllMissionUpdate()
          m_phase == PHASE_DEFI    ||
          m_phase == PHASE_MISSION ||
          m_phase == PHASE_FREE    ||
-         m_phase == PHASE_TEEN    ||
          m_phase == PHASE_USER    )
     {
         UpdateSceneChap(m_chap[m_index]);
@@ -4763,17 +4476,6 @@ void CMainDialog::UpdateSceneChap(int &chap)
     {
         for ( j=0 ; j<9 ; j++ )
         {
-/* TODO: #if _SCHOOL
-            if ( m_phase == PHASE_MISSION )  break;
-            if ( m_phase == PHASE_FREE    )  break;
-#if _CEEBOTDEMO
-            if ( m_phase == PHASE_TRAINER && j >= 2 )  break;
-#endif
-#endif
-#if _DEMO
-            if ( m_phase == PHASE_MISSION && j >= 4 )  break;
-            if ( m_phase == PHASE_TRAINER && j >= 1 )  break;
-#endif */
             BuildSceneName(fileName, m_sceneName, (j+1)*100);
             file = fopen(fileName.c_str(), "r");
             if ( file == NULL )  break;
@@ -4818,14 +4520,6 @@ void CMainDialog::UpdateSceneChap(int &chap)
                 break;
             }
 
-/* TODO: #if _TEEN
-            if ( m_phase == PHASE_TRAINER && !m_main->GetShowAll() && !bPassed )
-            {
-                j ++;
-                break;
-            }
-#endif*/
-
             if ( m_phase == PHASE_FREE && j == m_accessChap )
             {
                 j ++;
@@ -4869,21 +4563,6 @@ void CMainDialog::UpdateSceneList(int chap, int &sel)
 
     for ( j=0 ; j<99 ; j++ )
     {
-/* TODO: #if _SCHOOL
-        if ( m_phase == PHASE_MISSION )  break;
-        if ( m_phase == PHASE_FREE    )  break;
-#if _CEEBOTDEMO
-#if _TEEN
-        if ( m_phase == PHASE_TRAINER && j >= 5 )  break;
-#else
-        if ( m_phase == PHASE_TRAINER && j >= 3 )  break;
-#endif
-#endif
-#endif
-#if _DEMO
-        if ( m_phase == PHASE_MISSION && j >= 3 )  break;
-        if ( m_phase == PHASE_TRAINER && j >= 5 )  break;
-#endif */
         BuildSceneName(fileName, m_sceneName, (chap+1)*100+(j+1));
         file = fopen(fileName.c_str(), "r");
         if ( file == NULL )  break;
@@ -4927,14 +4606,6 @@ void CMainDialog::UpdateSceneList(int chap, int &sel)
             j ++;
             break;
         }
-
-/* TODO: #if _TEEN
-        if ( m_phase == PHASE_TRAINER && !m_main->GetShowAll() && !bPassed )
-        {
-            j ++;
-            break;
-        }
-#endif*/
     }
 
     BuildSceneName(fileName, m_sceneName, (chap+1)*100+(j+1));
@@ -4967,7 +4638,6 @@ void CMainDialog::ShowSoluceUpdate()
          m_phase == PHASE_DEFI    ||
          m_phase == PHASE_MISSION ||
          m_phase == PHASE_FREE    ||
-         m_phase == PHASE_TEEN    ||
          m_phase == PHASE_USER    )
     {
         m_bSceneSoluce = false;
@@ -5494,46 +5164,46 @@ void CMainDialog::ChangeSetupButtons()
 
 void CMainDialog::SetupMemorize()
 {
-    GetProfile().SetLocalProfileString("Directory", "scene",    m_sceneDir);
-    GetProfile().SetLocalProfileString("Directory", "savegame", m_savegameDir);
-    GetProfile().SetLocalProfileString("Directory", "public",   m_publicDir);
-    GetProfile().SetLocalProfileString("Directory", "user",     m_userDir);
-    GetProfile().SetLocalProfileString("Directory", "files",    m_filesDir);
-    GetProfile().SetLocalProfileInt("Setup", "Tooltips", m_bTooltip);
-    GetProfile().SetLocalProfileInt("Setup", "InterfaceGlint", m_bGlint);
-    GetProfile().SetLocalProfileInt("Setup", "InterfaceGlint", m_bRain);
-    GetProfile().SetLocalProfileInt("Setup", "Soluce4", m_bSoluce4);
-    GetProfile().SetLocalProfileInt("Setup", "Movies", m_bMovies);
-    GetProfile().SetLocalProfileInt("Setup", "NiceReset", m_bNiceReset);
-    GetProfile().SetLocalProfileInt("Setup", "HimselfDamage", m_bHimselfDamage);
-    GetProfile().SetLocalProfileInt("Setup", "CameraScroll", m_bCameraScroll);
-    GetProfile().SetLocalProfileInt("Setup", "CameraInvertX", m_bCameraInvertX);
-    GetProfile().SetLocalProfileInt("Setup", "CameraInvertY", m_bCameraInvertY);
-    GetProfile().SetLocalProfileInt("Setup", "InterfaceEffect", m_bEffect);
-    GetProfile().SetLocalProfileInt("Setup", "GroundShadow", m_engine->GetShadow());
-    GetProfile().SetLocalProfileInt("Setup", "GroundSpot", m_engine->GetGroundSpot());
-    GetProfile().SetLocalProfileInt("Setup", "ObjectDirty", m_engine->GetDirty());
-    GetProfile().SetLocalProfileInt("Setup", "FogMode", m_engine->GetFog());
-    GetProfile().SetLocalProfileInt("Setup", "LensMode", m_engine->GetLensMode());
-    GetProfile().SetLocalProfileInt("Setup", "SkyMode", m_engine->GetSkyMode());
-    GetProfile().SetLocalProfileInt("Setup", "PlanetMode", m_engine->GetPlanetMode());
-    GetProfile().SetLocalProfileInt("Setup", "LightMode", m_engine->GetLightMode());
-    GetProfile().SetLocalProfileFloat("Setup", "ParticleDensity", m_engine->GetParticleDensity());
-    GetProfile().SetLocalProfileFloat("Setup", "ClippingDistance", m_engine->GetClippingDistance());
-    GetProfile().SetLocalProfileFloat("Setup", "ObjectDetail", m_engine->GetObjectDetail());
-    GetProfile().SetLocalProfileFloat("Setup", "GadgetQuantity", m_engine->GetGadgetQuantity());
-    GetProfile().SetLocalProfileInt("Setup", "TextureQuality", m_engine->GetTextureQuality());
-    GetProfile().SetLocalProfileInt("Setup", "TotoMode", m_engine->GetTotoMode());
-    GetProfile().SetLocalProfileInt("Setup", "AudioVolume", m_sound->GetAudioVolume());
-    GetProfile().SetLocalProfileInt("Setup", "MusicVolume", m_sound->GetMusicVolume());
-    GetProfile().SetLocalProfileInt("Setup", "EditIndentMode", m_engine->GetEditIndentMode());
-    GetProfile().SetLocalProfileInt("Setup", "EditIndentValue", m_engine->GetEditIndentValue());
+    GetProfile().SetStringProperty("Directory", "scene",    m_sceneDir);
+    GetProfile().SetStringProperty("Directory", "savegame", m_savegameDir);
+    GetProfile().SetStringProperty("Directory", "public",   m_publicDir);
+    GetProfile().SetStringProperty("Directory", "user",     m_userDir);
+    GetProfile().SetStringProperty("Directory", "files",    m_filesDir);
+    GetProfile().SetIntProperty("Setup", "Tooltips", m_bTooltip);
+    GetProfile().SetIntProperty("Setup", "InterfaceGlint", m_bGlint);
+    GetProfile().SetIntProperty("Setup", "InterfaceGlint", m_bRain);
+    GetProfile().SetIntProperty("Setup", "Soluce4", m_bSoluce4);
+    GetProfile().SetIntProperty("Setup", "Movies", m_bMovies);
+    GetProfile().SetIntProperty("Setup", "NiceReset", m_bNiceReset);
+    GetProfile().SetIntProperty("Setup", "HimselfDamage", m_bHimselfDamage);
+    GetProfile().SetIntProperty("Setup", "CameraScroll", m_bCameraScroll);
+    GetProfile().SetIntProperty("Setup", "CameraInvertX", m_bCameraInvertX);
+    GetProfile().SetIntProperty("Setup", "CameraInvertY", m_bCameraInvertY);
+    GetProfile().SetIntProperty("Setup", "InterfaceEffect", m_bEffect);
+    GetProfile().SetIntProperty("Setup", "GroundShadow", m_engine->GetShadow());
+    GetProfile().SetIntProperty("Setup", "GroundSpot", m_engine->GetGroundSpot());
+    GetProfile().SetIntProperty("Setup", "ObjectDirty", m_engine->GetDirty());
+    GetProfile().SetIntProperty("Setup", "FogMode", m_engine->GetFog());
+    GetProfile().SetIntProperty("Setup", "LensMode", m_engine->GetLensMode());
+    GetProfile().SetIntProperty("Setup", "SkyMode", m_engine->GetSkyMode());
+    GetProfile().SetIntProperty("Setup", "PlanetMode", m_engine->GetPlanetMode());
+    GetProfile().SetIntProperty("Setup", "LightMode", m_engine->GetLightMode());
+    GetProfile().SetFloatProperty("Setup", "ParticleDensity", m_engine->GetParticleDensity());
+    GetProfile().SetFloatProperty("Setup", "ClippingDistance", m_engine->GetClippingDistance());
+    GetProfile().SetFloatProperty("Setup", "ObjectDetail", m_engine->GetObjectDetail());
+    GetProfile().SetFloatProperty("Setup", "GadgetQuantity", m_engine->GetGadgetQuantity());
+    GetProfile().SetIntProperty("Setup", "TextureQuality", m_engine->GetTextureQuality());
+    GetProfile().SetIntProperty("Setup", "TotoMode", m_engine->GetTotoMode());
+    GetProfile().SetIntProperty("Setup", "AudioVolume", m_sound->GetAudioVolume());
+    GetProfile().SetIntProperty("Setup", "MusicVolume", m_sound->GetMusicVolume());
+    GetProfile().SetIntProperty("Setup", "EditIndentMode", m_engine->GetEditIndentMode());
+    GetProfile().SetIntProperty("Setup", "EditIndentValue", m_engine->GetEditIndentValue());
 
     /* screen setup */
     if (m_setupFull)
-        GetProfile().SetLocalProfileInt("Setup", "Fullscreen", 1);
+        GetProfile().SetIntProperty("Setup", "Fullscreen", 1);
     else
-        GetProfile().SetLocalProfileInt("Setup", "Fullscreen", 0);
+        GetProfile().SetIntProperty("Setup", "Fullscreen", 0);
 
     CList *pl;
     CWindow *pw;
@@ -5543,7 +5213,7 @@ void CMainDialog::SetupMemorize()
         pl = static_cast<CList *>(pw->SearchControl(EVENT_LIST2));
         if ( pl != 0 )
         {
-            GetProfile().SetLocalProfileInt("Setup", "Resolution", pl->GetSelect());
+            GetProfile().SetIntProperty("Setup", "Resolution", pl->GetSelect());
         }
     }
     else
@@ -5560,23 +5230,9 @@ void CMainDialog::SetupMemorize()
         key << b.secondary << "  ";
     }
 
-    GetProfile().SetLocalProfileString("Setup", "KeyMap", key.str());
+    GetProfile().SetStringProperty("Setup", "KeyMap", key.str());
 
-#if _NET
-    if ( m_accessEnable )
-    {
-        iValue = m_accessMission;
-        SetLocalProfileInt("Setup", "AccessMission", iValue);
-
-        iValue = m_accessUser;
-        SetLocalProfileInt("Setup", "AccessUser", iValue);
-    }
-#endif
-
-    GetProfile().SetLocalProfileInt("Setup", "DeleteGamer", m_bDeleteGamer);
-
-    // TODO: write graphic engine profile
-    //m_engine->WriteProfile();
+    GetProfile().SetIntProperty("Setup", "DeleteGamer", m_bDeleteGamer);
 }
 
 // Remember all the settings.
@@ -5587,48 +5243,48 @@ void CMainDialog::SetupRecall()
     int         iValue;
     std::string key;
 
-    if ( GetProfile().GetLocalProfileString("Directory", "scene", key) )
+    if ( GetProfile().GetStringProperty("Directory", "scene", key) )
     {
         m_sceneDir = key;
     }
 
-    if ( GetProfile().GetLocalProfileString("Directory", "savegame", key) )
+    if ( GetProfile().GetStringProperty("Directory", "savegame", key) )
     {
         m_savegameDir = key;
     }
 
-    if ( GetProfile().GetLocalProfileString("Directory", "public", key) )
+    if ( GetProfile().GetStringProperty("Directory", "public", key) )
     {
         m_publicDir = key;
     }
 
-    if ( GetProfile().GetLocalProfileString("Directory", "user", key) )
+    if ( GetProfile().GetStringProperty("Directory", "user", key) )
     {
         m_userDir = key;
     }
 
-    if ( GetProfile().GetLocalProfileString("Directory", "files", key) )
+    if ( GetProfile().GetStringProperty("Directory", "files", key) )
     {
         m_filesDir = key;
     }
 
 
-    if ( GetProfile().GetLocalProfileInt("Setup", "TotoMode", iValue) )
+    if ( GetProfile().GetIntProperty("Setup", "TotoMode", iValue) )
     {
         m_engine->SetTotoMode(iValue);
     }
 
-    if ( GetProfile().GetLocalProfileInt("Setup", "Tooltips", iValue) )
+    if ( GetProfile().GetIntProperty("Setup", "Tooltips", iValue) )
     {
         m_bTooltip = iValue;
     }
 
-    if ( GetProfile().GetLocalProfileInt("Setup", "InterfaceGlint", iValue) )
+    if ( GetProfile().GetIntProperty("Setup", "InterfaceGlint", iValue) )
     {
         m_bGlint = iValue;
     }
 
-    if ( GetProfile().GetLocalProfileInt("Setup", "InterfaceGlint", iValue) )
+    if ( GetProfile().GetIntProperty("Setup", "InterfaceGlint", iValue) )
     {
         m_bRain = iValue;
     }
@@ -5639,86 +5295,86 @@ void CMainDialog::SetupRecall()
     //     m_engine->SetNiceMouse(iValue);
     // }
 
-    if ( GetProfile().GetLocalProfileInt("Setup", "Soluce4", iValue) )
+    if ( GetProfile().GetIntProperty("Setup", "Soluce4", iValue) )
     {
         m_bSoluce4 = iValue;
     }
 
-    if ( GetProfile().GetLocalProfileInt("Setup", "Movies", iValue) )
+    if ( GetProfile().GetIntProperty("Setup", "Movies", iValue) )
     {
         m_bMovies = iValue;
     }
 
-    if ( GetProfile().GetLocalProfileInt("Setup", "NiceReset", iValue) )
+    if ( GetProfile().GetIntProperty("Setup", "NiceReset", iValue) )
     {
         m_bNiceReset = iValue;
     }
 
-    if ( GetProfile().GetLocalProfileInt("Setup", "HimselfDamage", iValue) )
+    if ( GetProfile().GetIntProperty("Setup", "HimselfDamage", iValue) )
     {
         m_bHimselfDamage = iValue;
     }
 
-    if ( GetProfile().GetLocalProfileInt("Setup", "CameraScroll", iValue) )
+    if ( GetProfile().GetIntProperty("Setup", "CameraScroll", iValue) )
     {
         m_bCameraScroll = iValue;
         m_camera->SetCameraScroll(m_bCameraScroll);
     }
 
-    if ( GetProfile().GetLocalProfileInt("Setup", "CameraInvertX", iValue) )
+    if ( GetProfile().GetIntProperty("Setup", "CameraInvertX", iValue) )
     {
         m_bCameraInvertX = iValue;
         m_camera->SetCameraInvertX(m_bCameraInvertX);
     }
 
-    if ( GetProfile().GetLocalProfileInt("Setup", "CameraInvertY", iValue) )
+    if ( GetProfile().GetIntProperty("Setup", "CameraInvertY", iValue) )
     {
         m_bCameraInvertY = iValue;
         m_camera->SetCameraInvertY(m_bCameraInvertY);
     }
 
-    if ( GetProfile().GetLocalProfileInt("Setup", "InterfaceEffect", iValue) )
+    if ( GetProfile().GetIntProperty("Setup", "InterfaceEffect", iValue) )
     {
         m_bEffect = iValue;
     }
 
-    if ( GetProfile().GetLocalProfileInt("Setup", "GroundShadow", iValue) )
+    if ( GetProfile().GetIntProperty("Setup", "GroundShadow", iValue) )
     {
         m_engine->SetShadow(iValue);
     }
 
-    if ( GetProfile().GetLocalProfileInt("Setup", "GroundSpot", iValue) )
+    if ( GetProfile().GetIntProperty("Setup", "GroundSpot", iValue) )
     {
         m_engine->SetGroundSpot(iValue);
     }
 
-    if ( GetProfile().GetLocalProfileInt("Setup", "ObjectDirty", iValue) )
+    if ( GetProfile().GetIntProperty("Setup", "ObjectDirty", iValue) )
     {
         m_engine->SetDirty(iValue);
     }
 
-    if ( GetProfile().GetLocalProfileInt("Setup", "FogMode", iValue) )
+    if ( GetProfile().GetIntProperty("Setup", "FogMode", iValue) )
     {
         m_engine->SetFog(iValue);
         m_camera->SetOverBaseColor(Gfx::Color(0.0f, 0.0f, 0.0f, 0.0f)); // TODO: color ok?
     }
 
-    if ( GetProfile().GetLocalProfileInt("Setup", "LensMode", iValue) )
+    if ( GetProfile().GetIntProperty("Setup", "LensMode", iValue) )
     {
         m_engine->SetLensMode(iValue);
     }
 
-    if ( GetProfile().GetLocalProfileInt("Setup", "SkyMode", iValue) )
+    if ( GetProfile().GetIntProperty("Setup", "SkyMode", iValue) )
     {
         m_engine->SetSkyMode(iValue);
     }
 
-    if ( GetProfile().GetLocalProfileInt("Setup", "PlanetMode", iValue) )
+    if ( GetProfile().GetIntProperty("Setup", "PlanetMode", iValue) )
     {
         m_engine->SetPlanetMode(iValue);
     }
 
-    if ( GetProfile().GetLocalProfileInt("Setup", "LightMode", iValue) )
+    if ( GetProfile().GetIntProperty("Setup", "LightMode", iValue) )
     {
         m_engine->SetLightMode(iValue);
     }
@@ -5728,52 +5384,52 @@ void CMainDialog::SetupRecall()
     //     m_engine->SetJoystick(iValue);
     // }
 
-    if ( GetProfile().GetLocalProfileFloat("Setup", "ParticleDensity", fValue) )
+    if ( GetProfile().GetFloatProperty("Setup", "ParticleDensity", fValue) )
     {
         m_engine->SetParticleDensity(fValue);
     }
 
-    if ( GetProfile().GetLocalProfileFloat("Setup", "ClippingDistance", fValue) )
+    if ( GetProfile().GetFloatProperty("Setup", "ClippingDistance", fValue) )
     {
         m_engine->SetClippingDistance(fValue);
     }
 
-    if ( GetProfile().GetLocalProfileFloat("Setup", "ObjectDetail", fValue) )
+    if ( GetProfile().GetFloatProperty("Setup", "ObjectDetail", fValue) )
     {
         m_engine->SetObjectDetail(fValue);
     }
 
-    if ( GetProfile().GetLocalProfileFloat("Setup", "GadgetQuantity", fValue) )
+    if ( GetProfile().GetFloatProperty("Setup", "GadgetQuantity", fValue) )
     {
         m_engine->SetGadgetQuantity(fValue);
     }
 
-    if ( GetProfile().GetLocalProfileInt("Setup", "TextureQuality", iValue) )
+    if ( GetProfile().GetIntProperty("Setup", "TextureQuality", iValue) )
     {
         m_engine->SetTextureQuality(iValue);
     }
 
-    if ( GetProfile().GetLocalProfileInt("Setup", "AudioVolume", iValue) )
+    if ( GetProfile().GetIntProperty("Setup", "AudioVolume", iValue) )
     {
         m_sound->SetAudioVolume(iValue);
     }
 
-    if ( GetProfile().GetLocalProfileInt("Setup", "MusicVolume", iValue) )
+    if ( GetProfile().GetIntProperty("Setup", "MusicVolume", iValue) )
     {
         m_sound->SetMusicVolume(iValue);
     }
 
-    if ( GetProfile().GetLocalProfileInt("Setup", "EditIndentMode", iValue) )
+    if ( GetProfile().GetIntProperty("Setup", "EditIndentMode", iValue) )
     {
         m_engine->SetEditIndentMode(iValue);
     }
 
-    if ( GetProfile().GetLocalProfileInt("Setup", "EditIndentValue", iValue) )
+    if ( GetProfile().GetIntProperty("Setup", "EditIndentValue", iValue) )
     {
         m_engine->SetEditIndentValue(iValue);
     }
 
-    if (GetProfile().GetLocalProfileString("Setup", "KeyMap", key))
+    if (GetProfile().GetStringProperty("Setup", "KeyMap", key))
     {
         std::stringstream skey;
         skey.str(key);
@@ -5786,32 +5442,17 @@ void CMainDialog::SetupRecall()
          }
     }
 
-#if _NET
-    if ( m_accessEnable )
-    {
-        if ( GetProfile().GetLocalProfileInt("Setup", "AccessMission", iValue) )
-        {
-            m_accessMission = iValue;
-        }
-
-        if ( GetProfile().GetLocalProfileInt("Setup", "AccessUser", iValue) )
-        {
-            m_accessUser = iValue;
-        }
-    }
-#endif
-
-    if ( GetProfile().GetLocalProfileInt("Setup", "DeleteGamer", iValue) )
+    if ( GetProfile().GetIntProperty("Setup", "DeleteGamer", iValue) )
     {
         m_bDeleteGamer = iValue;
     }
 
-    if ( GetProfile().GetLocalProfileInt("Setup", "Resolution", iValue) )
+    if ( GetProfile().GetIntProperty("Setup", "Resolution", iValue) )
     {
         m_setupSelMode = iValue;
     }
 
-    if ( GetProfile().GetLocalProfileInt("Setup", "Fullscreen", iValue) )
+    if ( GetProfile().GetIntProperty("Setup", "Fullscreen", iValue) )
     {
         m_setupFull = (iValue == 1);
     }
@@ -6003,10 +5644,6 @@ void CMainDialog::StartAbort()
 
     pos.x = 0.40f;
     dim.x = 0.20f;
-/* TODO: #if _POLISH
-    pos.x -=  7.0f/640.0f;
-    dim.x += 14.0f/640.0f;
-#endif*/
     dim.y = 32.0f/480.0f;
 
     pos.y = 0.74f;
@@ -6197,12 +5834,6 @@ void CMainDialog::StartDialog(Math::Point dim, bool bFire, bool bOK, bool bCance
     pw = static_cast<CWindow*>(m_interface->SearchControl(EVENT_WINDOW8));
     if ( pw != 0 )  pw->ClearState(STATE_ENABLE);
 
-    pb = static_cast<CButton*>(m_interface->SearchControl(EVENT_BUTTON_QUIT));
-    if ( pb != 0 )
-    {
-        pb->ClearState(STATE_VISIBLE);
-    }
-
     m_bDialogFire = bFire;
 
     std::string name;
@@ -6384,12 +6015,6 @@ void CMainDialog::StopDialog()
 
     pw = static_cast<CWindow*>(m_interface->SearchControl(EVENT_WINDOW8));
     if ( pw != 0 )  pw->SetState(STATE_ENABLE);
-
-    pb = static_cast<CButton*>(m_interface->SearchControl(EVENT_BUTTON_QUIT));
-    if ( pb != 0 )
-    {
-        pb->SetState(STATE_VISIBLE);
-    }
 
     StopSuspend();
     m_interface->DeleteControl(EVENT_WINDOW9);

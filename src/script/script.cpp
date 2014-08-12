@@ -18,6 +18,7 @@
 #include "script/script.h"
 
 #include "app/app.h"
+#include "app/gamedata.h"
 
 #include "common/global.h"
 #include "common/iman.h"
@@ -1393,7 +1394,7 @@ bool CScript::Process(CScript* script, CBotVar* result, int &exception)
 
         if ( err == ERR_STOP )  err = ERR_OK;
         result->SetValInt(err);  // indicates the error or ok
-        if ( err != ERR_OK && script->m_errMode == ERM_STOP )
+        if ( ShouldProcessStop(err, script->m_errMode) )
         {
             exception = err;
             return false;
@@ -1404,6 +1405,21 @@ bool CScript::Process(CScript* script, CBotVar* result, int &exception)
     script->m_primaryTask->EventProcess(script->m_event);
     script->m_bContinue = true;
     return false;  // not done
+}
+
+
+// Returns true if error code means real error and exception must be thrown
+
+bool CScript::ShouldProcessStop(Error err, int errMode)
+{
+    // aim impossible  - not a real error
+    if ( err == ERR_AIM_IMPOSSIBLE )
+        return false;
+
+    if ( err != ERR_OK && errMode == ERM_STOP )
+        return true;
+
+    return false;
 }
 
 
@@ -1665,7 +1681,7 @@ bool CScript::rCanBuild(CBotVar* var, CBotVar* result, int& exception, void* use
          (category == OBJECT_DESTROYER && (g_build & BUILD_DESTROYER)))
     {
 
-        //if we want to build not researched one
+        // if we want to build not researched one
         if ( (category == OBJECT_TOWER   && !(g_researchDone & RESEARCH_TOWER)) ||
              (category == OBJECT_NUCLEAR && !(g_researchDone & RESEARCH_ATOMIC))
             )
@@ -1709,7 +1725,7 @@ bool CScript::rBuild(CBotVar* var, CBotVar* result, int& exception, void* user)
     }
     else
     {
-        category = static_cast<ObjectType>(var->GetValInt()); //get category parameter
+        category = static_cast<ObjectType>(var->GetValInt()); // get category parameter
         if ( (category == OBJECT_DERRICK   && (g_build & BUILD_DERRICK))   ||
              (category == OBJECT_FACTORY   && (g_build & BUILD_FACTORY))   ||
              (category == OBJECT_STATION   && (g_build & BUILD_STATION))   ||
@@ -1726,7 +1742,7 @@ bool CScript::rBuild(CBotVar* var, CBotVar* result, int& exception, void* user)
              (category == OBJECT_DESTROYER && (g_build & BUILD_DESTROYER)))
         {
 
-            //if we want to build not researched one
+            // if we want to build not researched one
             if ( (category == OBJECT_TOWER   && !(g_researchDone & RESEARCH_TOWER)) ||
                  (category == OBJECT_NUCLEAR && !(g_researchDone & RESEARCH_ATOMIC))
                 )
@@ -1739,8 +1755,11 @@ bool CScript::rBuild(CBotVar* var, CBotVar* result, int& exception, void* user)
             }
 
         }
+        
+        if (pThis->GetIgnoreBuildCheck())
+            err = ERR_OK;
 
-        if (err == ERR_OK && script->m_primaryTask == 0) //if we can build and no task is present
+        if (err == ERR_OK && script->m_primaryTask == 0) // if we can build and no task is present
         {
             script->m_primaryTask = new CTaskManager(script->m_object);
             err = script->m_primaryTask->StartTaskBuild(category);
@@ -1751,9 +1770,9 @@ bool CScript::rBuild(CBotVar* var, CBotVar* result, int& exception, void* user)
                 script->m_primaryTask = 0;
             }
         }
-        //When script is waiting for finishing this task, it sets ERR_OK, and continues executing Process
-        //without creating new task. I think, there was a problem with previous version in release configuration
-        //It did not init error variable in this situation, and code tried to use variable with trash inside
+        // When script is waiting for finishing this task, it sets ERR_OK, and continues executing Process
+        // without creating new task. I think, there was a problem with previous version in release configuration
+        // It did not init error variable in this situation, and code tried to use variable with trash inside
     }
 
     if ( err != ERR_OK )
@@ -2843,7 +2862,6 @@ bool CScript::rShield(CBotVar* var, CBotVar* result, int& exception, void* user)
 
 CBotTypResult CScript::cFire(CBotVar* &var, void* user)
 {
-#if 0
     CObject*    pThis = static_cast<CObject *>(user);
     ObjectType  type;
 
@@ -2851,23 +2869,25 @@ CBotTypResult CScript::cFire(CBotVar* &var, void* user)
 
     if ( type == OBJECT_ANT )
     {
-        return cOnePoint(var, user);
+        if ( var == 0 ) return CBotTypResult(CBotErrLowParam);
+        CBotTypResult ret = cPoint(var, user);
+        if ( ret.GetType() != 0 )  return ret;
+        if ( var != 0 )  return CBotTypResult(CBotErrOverParam);
     }
     else if ( type == OBJECT_SPIDER )
     {
-        return cNull(var, user);
+        if ( var != 0 )  return CBotTypResult(CBotErrOverParam);
     }
     else
     {
-        if ( var == 0 )  return CBotTypResult(CBotTypFloat);
-        if ( var->GetType() > CBotTypDouble )  return CBotTypResult(CBotErrBadNum);
-        var = var->GetNext();
-        if ( var != 0 )  return CBotTypResult(CBotErrOverParam);
-        return CBotTypResult(CBotTypFloat);
+        if ( var != 0 )
+        {
+            if ( var->GetType() > CBotTypDouble )  return CBotTypResult(CBotErrBadNum);
+            var = var->GetNext();
+            if ( var != 0 )  return CBotTypResult(CBotErrOverParam);
+        }
     }
-#else
     return CBotTypResult(CBotTypFloat);
-#endif
 }
 
 // Instruction "fire(delay)".
@@ -2903,6 +2923,7 @@ bool CScript::rFire(CBotVar* var, CBotVar* result, int& exception, void* user)
         {
             if ( var == 0 )  delay = 0.0f;
             else             delay = var->GetValFloat();
+	    if ( delay < 0.0f ) delay = -delay;
             err = script->m_primaryTask->StartTaskFire(delay);
         }
 
@@ -2951,7 +2972,11 @@ bool CScript::rAim(CBotVar* var, CBotVar* result, int& exception, void* user)
         var = var->GetNext();
         var == 0 ? y=0.0f : y=var->GetValFloat();
         err = script->m_primaryTask->StartTaskGunGoal(x*Math::PI/180.0f, y*Math::PI/180.0f);
-        if ( err != ERR_OK )
+        if ( err == ERR_AIM_IMPOSSIBLE )
+        {
+            result->SetValInt(err);  // shows the error
+        }
+        else if ( err != ERR_OK )
         {
             delete script->m_primaryTask;
             script->m_primaryTask = 0;
@@ -4384,7 +4409,7 @@ void CScript::New(Ui::CEdit* edit, const char* name)
     sf = m_main->GetScriptFile();
     if ( sf[0] != 0 )  // Load an empty program specific?
     {
-        std::string filename = CApplication::GetInstancePointer()->GetDataFilePath(DIR_AI, sf);
+        std::string filename = CGameData::GetInstancePointer()->GetFilePath(DIR_AI, sf);
         file = fopen(filename.c_str(), "rb");
         if ( file != NULL )
         {
@@ -4478,7 +4503,7 @@ bool CScript::ReadScript(const char* filename)
 
     if ( strchr(filename, '/') == 0 ) //we're reading non user script
     {
-        name = CApplication::GetInstancePointer()->GetDataFilePath(DIR_AI, filename);
+        name = CGameData::GetInstancePointer()->GetFilePath(DIR_AI, filename);
     }
     else
     {
@@ -4512,7 +4537,7 @@ bool CScript::WriteScript(const char* filename)
 
     if ( strchr(filename, '/') == 0 ) //we're writing non user script
     {
-        name = CApplication::GetInstancePointer()->GetDataFilePath(DIR_AI, filename);
+        name = CGameData::GetInstancePointer()->GetFilePath(DIR_AI, filename);
     }
     else
     {

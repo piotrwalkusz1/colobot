@@ -19,6 +19,7 @@
 #include "ui/edit.h"
 
 #include "app/app.h"
+#include "app/gamedata.h"
 
 #include "clipboard/clipboard.h"
 
@@ -114,21 +115,16 @@ CEdit::CEdit () : CControl ()
 
 CEdit::~CEdit()
 {
-    int     i;
-
     FreeImage();
 
-    for ( i=0 ; i<EDITUNDOMAX ; i++ )
+    for (int i = 0; i < EDITUNDOMAX; i++)
     {
         delete m_undo[i].text;
         m_undo[i].text = nullptr;
     }
 
-    if (m_text != nullptr)
-    {
-        delete[] m_text;
-        m_text = nullptr;
-    }
+    delete[] m_text;
+    m_text = nullptr;
 
     delete m_scroll;
     m_scroll = nullptr;
@@ -372,23 +368,23 @@ bool CEdit::EventProcess(const Event &event)
                 MoveChar(1, bControl, bShift);
                 return true;
             }
-            if ( event.key.key == KEY(UP) )
+            if ( event.key.key == KEY(UP) && m_bMulti )
             {
                 MoveLine(-1, bControl, bShift);
                 return true;
             }
-            if ( event.key.key == KEY(DOWN) )
+            if ( event.key.key == KEY(DOWN) && m_bMulti )
             {
                 MoveLine(1, bControl, bShift);
                 return true;
             }
 
-            if ( event.key.key == KEY(PAGEUP) )  // PageUp ?
+            if ( event.key.key == KEY(PAGEUP) && m_bMulti )  // PageUp ?
             {
                 MoveLine(-(m_lineVisible-1), bControl, bShift);
                 return true;
             }
-            if ( event.key.key == KEY(PAGEDOWN) )  // PageDown ?
+            if ( event.key.key == KEY(PAGEDOWN) && m_bMulti )  // PageDown ?
             {
                 MoveLine(m_lineVisible-1, bControl, bShift);
                 return true;
@@ -1224,11 +1220,7 @@ void CEdit::DrawPart(Math::Point pos, Math::Point dim, int icon)
     Math::Point     uv1, uv2;
     float       dp;
 
-#if _POLISH
-    m_engine->SetTexture("textp.png");
-#else
     m_engine->SetTexture("text.png");
-#endif
     m_engine->SetState(Gfx::ENG_RSTATE_NORMAL);
 
     uv1.x = (16.0f/256.0f)*(icon%16);
@@ -1462,7 +1454,7 @@ bool CEdit::ReadText(std::string filename, int addSize)
     std::string path = filename;
     if (!fs::exists(path))
     {
-        path = CApplication::GetInstancePointer()->GetDataDirPath() + "/" + filename;
+        path = CGameData::GetInstancePointer()->GetDataPath(filename);
     }
 
     file = fopen(fs::path(path).make_preferred().string().c_str(), "rb");
@@ -1482,8 +1474,7 @@ bool CEdit::ReadText(std::string filename, int addSize)
 
     FreeImage();
 
-    if (m_text != nullptr)
-        delete[] m_text;
+    delete[] m_text;
 
     m_text = new char[m_maxChar+1];
     memset(m_text, 0, m_maxChar+1);
@@ -1961,8 +1952,7 @@ void CEdit::SetMaxChar(int max)
 {
     FreeImage();
 
-    if (m_text != nullptr)
-        delete[] m_text;
+    delete[] m_text;
 
     m_maxChar = max;
 

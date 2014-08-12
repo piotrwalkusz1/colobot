@@ -159,10 +159,10 @@ public:
     /** Function called to cache all sound effect files.
      *  Function calls \link CSoundInterface::Cache() \endlink for each file
      */
-    void CacheAll(const std::string &path);
+    void CacheAll();
 
     /** Function called to add all music files to list */
-    void AddMusicFiles(const std::string &path);
+    void AddMusicFiles();
 
     /** Function called to cache sound effect file.
      *  This function is called by plugin interface for each file.
@@ -321,14 +321,11 @@ public:
      * \param filename - name of file to play
      * \return return true on success
      */
-     virtual bool PlayPauseMusic(const std::string &filename);
+     virtual bool PlayPauseMusic(const std::string &filename, bool repeat);
      
      /** Stop playing pause music and return to the mission music
       * \return nothing
       */
      virtual void StopPauseMusic();
-
-protected:
-    std::string m_soundPath;
 };
 

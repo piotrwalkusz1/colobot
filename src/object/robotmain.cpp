@@ -20,6 +20,7 @@
 #include "CBot/CBotDll.h"
 
 #include "app/app.h"
+#include "app/gamedata.h"
 
 #include "common/event.h"
 #include "common/global.h"
@@ -647,6 +648,10 @@ CRobotMain::CRobotMain(CApplication* app, bool loadProfile)
     m_visitArrow  = 0;
     m_audioTrack  = "";
     m_audioRepeat = true;
+    m_satcomTrack  = "";
+    m_satcomRepeat = true;
+    m_editorTrack  = "";
+    m_editorRepeat = true;
     m_delayWriteMessage = 0;
     m_selectObject = 0;
     m_infoUsed     = 0;
@@ -716,11 +721,11 @@ CRobotMain::CRobotMain(CApplication* app, bool loadProfile)
 
     if (loadProfile)
     {
-        if (GetProfile().GetLocalProfileFloat("Edit", "FontSize",    fValue)) m_fontSize    = fValue;
-        if (GetProfile().GetLocalProfileFloat("Edit", "WindowPosX",  fValue)) m_windowPos.x = fValue;
-        if (GetProfile().GetLocalProfileFloat("Edit", "WindowPosY",  fValue)) m_windowPos.y = fValue;
-        if (GetProfile().GetLocalProfileFloat("Edit", "WindowDimX",  fValue)) m_windowDim.x = fValue;
-        if (GetProfile().GetLocalProfileFloat("Edit", "WindowDimY",  fValue)) m_windowDim.y = fValue;
+        if (GetProfile().GetFloatProperty("Edit", "FontSize",    fValue)) m_fontSize    = fValue;
+        if (GetProfile().GetFloatProperty("Edit", "WindowPosX",  fValue)) m_windowPos.x = fValue;
+        if (GetProfile().GetFloatProperty("Edit", "WindowPosY",  fValue)) m_windowPos.y = fValue;
+        if (GetProfile().GetFloatProperty("Edit", "WindowDimX",  fValue)) m_windowDim.x = fValue;
+        if (GetProfile().GetFloatProperty("Edit", "WindowDimY",  fValue)) m_windowDim.y = fValue;
     }
 
     m_IOPublic = false;
@@ -730,11 +735,11 @@ CRobotMain::CRobotMain(CApplication* app, bool loadProfile)
 
     if (loadProfile)
     {
-        if (GetProfile().GetLocalProfileInt  ("Edit", "IOPublic", iValue)) m_IOPublic = iValue;
-        if (GetProfile().GetLocalProfileFloat("Edit", "IOPosX",   fValue)) m_IOPos.x  = fValue;
-        if (GetProfile().GetLocalProfileFloat("Edit", "IOPosY",   fValue)) m_IOPos.y  = fValue;
-        if (GetProfile().GetLocalProfileFloat("Edit", "IODimX",   fValue)) m_IODim.x  = fValue;
-        if (GetProfile().GetLocalProfileFloat("Edit", "IODimY",   fValue)) m_IODim.y  = fValue;
+        if (GetProfile().GetIntProperty  ("Edit", "IOPublic", iValue)) m_IOPublic = iValue;
+        if (GetProfile().GetFloatProperty("Edit", "IOPosX",   fValue)) m_IOPos.x  = fValue;
+        if (GetProfile().GetFloatProperty("Edit", "IOPosY",   fValue)) m_IOPos.y  = fValue;
+        if (GetProfile().GetFloatProperty("Edit", "IODimX",   fValue)) m_IODim.x  = fValue;
+        if (GetProfile().GetFloatProperty("Edit", "IODimY",   fValue)) m_IODim.y  = fValue;
     }
 
     m_short->FlushShortcuts();
@@ -752,7 +757,7 @@ CRobotMain::CRobotMain(CApplication* app, bool loadProfile)
     g_unit = UNIT;
 
     m_gamerName = "";
-    if (loadProfile) GetProfile().GetLocalProfileString("Gamer", "LastName", m_gamerName);
+    if (loadProfile) GetProfile().GetStringProperty("Gamer", "LastName", m_gamerName);
     SetGlobalGamerName(m_gamerName);
     ReadFreeParam();
     if (loadProfile) m_dialog->SetupRecall();
@@ -853,8 +858,6 @@ CRobotMain::CRobotMain(CApplication* app, bool loadProfile)
     CBotProgram::DefineNum("ResearchRecycler",      RESEARCH_RECYCLER);
     CBotProgram::DefineNum("ResearchSubber",        RESEARCH_SUBM);
     CBotProgram::DefineNum("ResearchSniffer",       RESEARCH_SNIFFER);
-
-//?    CBotProgram::
 
     CBotProgram::DefineNum("PolskiPortalColobota", 1337);
 
@@ -963,18 +966,18 @@ void CRobotMain::CreateIni()
 {
     m_dialog->SetupMemorize();
 
-    GetProfile().SetLocalProfileFloat("Edit", "FontSize", m_fontSize);
-    GetProfile().SetLocalProfileFloat("Edit", "WindowPosX", m_windowPos.x);
-    GetProfile().SetLocalProfileFloat("Edit", "WindowPosY", m_windowPos.y);
-    GetProfile().SetLocalProfileFloat("Edit", "WindowDimX", m_windowDim.x);
-    GetProfile().SetLocalProfileFloat("Edit", "WindowDimY", m_windowDim.y);
-    GetProfile().SetLocalProfileInt("Edit", "IOPublic", m_IOPublic);
-    GetProfile().SetLocalProfileFloat("Edit", "IOPosX", m_IOPos.x);
-    GetProfile().SetLocalProfileFloat("Edit", "IOPosY", m_IOPos.y);
-    GetProfile().SetLocalProfileFloat("Edit", "IODimX", m_IODim.x);
-    GetProfile().SetLocalProfileFloat("Edit", "IODimY", m_IODim.y);
+    GetProfile().SetFloatProperty("Edit", "FontSize", m_fontSize);
+    GetProfile().SetFloatProperty("Edit", "WindowPosX", m_windowPos.x);
+    GetProfile().SetFloatProperty("Edit", "WindowPosY", m_windowPos.y);
+    GetProfile().SetFloatProperty("Edit", "WindowDimX", m_windowDim.x);
+    GetProfile().SetFloatProperty("Edit", "WindowDimY", m_windowDim.y);
+    GetProfile().SetIntProperty("Edit", "IOPublic", m_IOPublic);
+    GetProfile().SetFloatProperty("Edit", "IOPosX", m_IOPos.x);
+    GetProfile().SetFloatProperty("Edit", "IOPosY", m_IOPos.y);
+    GetProfile().SetFloatProperty("Edit", "IODimX", m_IODim.x);
+    GetProfile().SetFloatProperty("Edit", "IODimY", m_IODim.y);
 
-    GetProfile().SaveCurrentDirectory();
+    GetProfile().Save();
 }
 
 void CRobotMain::SetDefaultInputBindings()
@@ -1078,9 +1081,6 @@ void CRobotMain::ChangePhase(Phase phase)
         m_sound->StopMusic(0.0f);
         m_camera->SetControllingObject(0);
 
-/* TODO: #if _SCHOOL
-        if ( true )
-#else*/
         if (m_gameTime > 10.0f)  // did you play at least 10 seconds?
         {
             int rank = m_dialog->GetSceneRank();
@@ -1167,12 +1167,6 @@ void CRobotMain::ChangePhase(Phase phase)
     m_cmdEdit = false;  // hidden for now
 
     // Creates the speedometer.
-/* TODO: #if _TEEN
-    dim.x =  30.0f/640.0f;
-    dim.y =  20.0f/480.0f;
-    pos.x =   4.0f/640.0f;
-    pos.y = 454.0f/480.0f;
-#else*/
     dim.x =  30.0f/640.0f;
     dim.y =  20.0f/480.0f;
     pos.x =   4.0f/640.0f;
@@ -1219,14 +1213,6 @@ void CRobotMain::ChangePhase(Phase phase)
 
         m_app->ResetTimeAfterLoading();
 
-        /*Math::Point ddim;
-
-        pos.x = 620.0f/640.0f;
-        pos.y = 460.0f/480.0f;
-        ddim.x = 20.0f/640.0f;
-        ddim.y = 20.0f/480.0f;
-        m_interface->CreateButton(pos, ddim, 11, EVENT_BUTTON_QUIT);*/
-
         if (m_immediatSatCom && !loading  &&
             m_infoFilename[SATCOM_HUSTON][0] != 0)
             StartDisplayInfo(SATCOM_HUSTON, false);  // shows the instructions
@@ -1244,10 +1230,6 @@ void CRobotMain::ChangePhase(Phase phase)
         }
         else
         {
-/* TODO: #if _TEEN
-            m_winTerminate = (m_endingWinRank == 900);
-            m_dialog->SetSceneName("teenw");
-#else*/
             m_winTerminate = (m_endingWinRank == 904);
             m_dialog->SetSceneName("win");
 
@@ -1261,16 +1243,6 @@ void CRobotMain::ChangePhase(Phase phase)
 
             if (m_winTerminate)
             {
-/* TODO: #if _TEEN
-                pos.x = ox+sx*3;  pos.y = oy+sy*1;
-                ddim.x = dim.x*15;  ddim.y = dim.y*2;
-                pe = m_interface->CreateEdit(pos, ddim, 0, EVENT_EDIT0);
-                pe->SetFontType(FONT_COLOBOT);
-                pe->SetEditCap(false);
-                pe->SetHiliteCap(false);
-                pe->ReadText("help/teenw.txt");
-#else*/
-
                 pos.x = ox+sx*3;  pos.y = oy+sy*0.2f;
                 ddim.x = dim.x*15;  ddim.y = dim.y*3.0f;
                 pe = m_interface->CreateEdit(pos, ddim, 0, EVENT_EDIT0);
@@ -1654,18 +1626,6 @@ bool CRobotMain::ProcessEvent(Event &event)
 
                 m_cameraPan  = 0.0f;
                 m_cameraZoom = 0.0f;
-                break;
-
-            case EVENT_BUTTON_QUIT:
-                if (m_movie->IsExist())
-                    StartDisplayInfo(SATCOM_HUSTON, false);
-                else if (m_winDelay > 0.0f)
-                    ChangePhase(PHASE_WIN);
-                else if (m_lostDelay > 0.0f)
-
-                    ChangePhase(PHASE_LOST);
-                else
-                    m_dialog->StartAbort();  // do you want to leave?
                 break;
 
             case EVENT_OBJECT_LIMIT:
@@ -2101,9 +2061,6 @@ void CRobotMain::ExecuteCmd(char *cmd)
         return;
     }
 
-/* TODO: #if _TEEN
-    if (strcmp(cmd, "allteens") == 0)
-#else*/
     if (strcmp(cmd, "allmission") == 0)
     {
         m_showAll = !m_showAll;
@@ -2210,12 +2167,6 @@ void CRobotMain::StartDisplayInfo(const char *filename, int index)
         m_sound->MuteAll(true);
     }
 
-    Ui::CButton* pb = static_cast<Ui::CButton*>(m_interface->SearchControl(EVENT_BUTTON_QUIT));
-    if (pb != nullptr)
-    {
-        pb->ClearState(Ui::STATE_VISIBLE);
-    }
-
     bool soluce = m_dialog->GetSceneSoluce();
 
     m_displayInfo = new Ui::CDisplayInfo();
@@ -2244,10 +2195,6 @@ void CRobotMain::StopDisplayInfo()
 
     if (!m_editLock)
     {
-        Ui::CButton* pb = static_cast<Ui::CButton*>(m_interface->SearchControl(EVENT_BUTTON_QUIT));
-        if (pb != nullptr)
-            pb->SetState(Ui::STATE_VISIBLE);
-
         SelectObject(m_infoObject, false);  // gives the command buttons
         m_displayText->HideText(false);
 
@@ -2285,20 +2232,12 @@ void CRobotMain::StartSuspend()
     m_infoObject = DeselectAll();  // removes the control buttons
     m_displayText->HideText(true);
 
-    Ui::CButton* pb = static_cast<Ui::CButton*>(m_interface->SearchControl(EVENT_BUTTON_QUIT));
-    if (pb != nullptr)
-        pb->ClearState(Ui::STATE_VISIBLE);
-
     m_suspend = true;
 }
 
 //! End of dialogue during the game
 void CRobotMain::StopSuspend()
 {
-    Ui::CButton* pb = static_cast<Ui::CButton*>(m_interface->SearchControl(EVENT_BUTTON_QUIT));
-    if (pb != nullptr)
-        pb->SetState(Ui::STATE_VISIBLE);
-
     SelectObject(m_infoObject, false);  // gives the command buttons
     m_map->ShowMap(m_mapShow);
     m_displayText->HideText(false);
@@ -2319,7 +2258,7 @@ float CRobotMain::GetGameTime()
 void CRobotMain::SetFontSize(float size)
 {
     m_fontSize = size;
-    GetProfile().SetLocalProfileFloat("Edit", "FontSize", m_fontSize);
+    GetProfile().SetFloatProperty("Edit", "FontSize", m_fontSize);
 }
 
 float CRobotMain::GetFontSize()
@@ -2331,8 +2270,8 @@ float CRobotMain::GetFontSize()
 void CRobotMain::SetWindowPos(Math::Point pos)
 {
     m_windowPos = pos;
-    GetProfile().SetLocalProfileFloat("Edit", "WindowPosX", m_windowPos.x);
-    GetProfile().SetLocalProfileFloat("Edit", "WindowPosY", m_windowPos.y);
+    GetProfile().SetFloatProperty("Edit", "WindowPosX", m_windowPos.x);
+    GetProfile().SetFloatProperty("Edit", "WindowPosY", m_windowPos.y);
 }
 
 Math::Point CRobotMain::GetWindowPos()
@@ -2343,8 +2282,8 @@ Math::Point CRobotMain::GetWindowPos()
 void CRobotMain::SetWindowDim(Math::Point dim)
 {
     m_windowDim = dim;
-    GetProfile().SetLocalProfileFloat("Edit", "WindowDimX", m_windowDim.x);
-    GetProfile().SetLocalProfileFloat("Edit", "WindowDimY", m_windowDim.y);
+    GetProfile().SetFloatProperty("Edit", "WindowDimX", m_windowDim.x);
+    GetProfile().SetFloatProperty("Edit", "WindowDimY", m_windowDim.y);
 }
 
 Math::Point CRobotMain::GetWindowDim()
@@ -2357,7 +2296,7 @@ Math::Point CRobotMain::GetWindowDim()
 void CRobotMain::SetIOPublic(bool mode)
 {
     m_IOPublic = mode;
-    GetProfile().SetLocalProfileInt("Edit", "IOPublic", m_IOPublic);
+    GetProfile().SetIntProperty("Edit", "IOPublic", m_IOPublic);
 }
 
 bool CRobotMain::GetIOPublic()
@@ -2368,8 +2307,8 @@ bool CRobotMain::GetIOPublic()
 void CRobotMain::SetIOPos(Math::Point pos)
 {
     m_IOPos = pos;
-    GetProfile().SetLocalProfileFloat("Edit", "IOPosX", m_IOPos.x);
-    GetProfile().SetLocalProfileFloat("Edit", "IOPosY", m_IOPos.y);
+    GetProfile().SetFloatProperty("Edit", "IOPosX", m_IOPos.x);
+    GetProfile().SetFloatProperty("Edit", "IOPosY", m_IOPos.y);
 }
 
 Math::Point CRobotMain::GetIOPos()
@@ -2380,8 +2319,8 @@ Math::Point CRobotMain::GetIOPos()
 void CRobotMain::SetIODim(Math::Point dim)
 {
     m_IODim = dim;
-    GetProfile().SetLocalProfileFloat("Edit", "IODimX", m_IODim.x);
-    GetProfile().SetLocalProfileFloat("Edit", "IODimY", m_IODim.y);
+    GetProfile().SetFloatProperty("Edit", "IODimX", m_IODim.x);
+    GetProfile().SetFloatProperty("Edit", "IODimY", m_IODim.y);
 }
 
 Math::Point CRobotMain::GetIODim()
@@ -3664,199 +3603,6 @@ char* SkipNum(char *p)
     return p;
 }
 
-//! Conversion of units
-void CRobotMain::Convert()
-{
-    char* base = m_dialog->GetSceneName();
-    int rank = m_dialog->GetSceneRank();
-
-    //TODO change line to string
-    char line[500];
-    std::string tempLine;
-
-    m_dialog->BuildSceneName(tempLine, base, rank);
-    strcpy(line, tempLine.c_str());
-    FILE* file = fopen(line, "r");
-    if (file == NULL) return;
-
-    strcpy(line+strlen(line)-4, ".new");
-    FILE* fileNew = fopen(line, "w");
-    if (fileNew == NULL) return;
-
-    char lineNew[500];
-    char s[200];
-
-    while (fgets(line, 500, file) != NULL)
-    {
-        strcpy(lineNew, line);
-
-        if (Cmd(line, "DeepView"))
-        {
-            char* p = strstr(line, "air=");
-            if (p != 0)
-            {
-                float value = OpFloat(line, "air", 500.0f);
-                value /= g_unit;
-                p[0] = 0;
-                p = SkipNum(p+4);
-                strcpy(lineNew, line);
-                strcat(lineNew, "air=");
-                sprintf(s, "%.2f", value);
-                strcat(lineNew, s);
-                strcat(lineNew, " ");
-                strcat(lineNew, p);
-            }
-            strcpy(line, lineNew);
-
-            p = strstr(line, "water=");
-            if (p != 0)
-            {
-                float value = OpFloat(line, "water", 100.0f);
-                value /= g_unit;
-                p[0] = 0;
-                p = SkipNum(p+6);
-                strcpy(lineNew, line);
-                strcat(lineNew, "water=");
-                sprintf(s, "%.2f", value);
-                strcat(lineNew, s);
-                strcat(lineNew, " ");
-                strcat(lineNew, p);
-            }
-            strcpy(line, lineNew);
-        }
-
-        if (Cmd(line, "TerrainGenerate"))
-        {
-            char* p = strstr(line, "vision=");
-            if (p != 0)
-            {
-                float value = OpFloat(line, "vision", 500.0f);
-                value /= g_unit;
-                p[0] = 0;
-                p = SkipNum(p+7);
-                strcpy(lineNew, line);
-                strcat(lineNew, "vision=");
-                sprintf(s, "%.2f", value);
-                strcat(lineNew, s);
-                strcat(lineNew, " ");
-                strcat(lineNew, p);
-            }
-        }
-
-        if (Cmd(line, "CreateObject") ||
-            Cmd(line, "CreateSpot"))
-        {
-            char* p = strstr(line, "pos=");
-            if (p != 0)
-            {
-                Math::Vector pos = OpPos(line, "pos");
-                pos.x /= g_unit;
-                pos.y /= g_unit;
-                pos.z /= g_unit;
-                p[0] = 0;
-                p = SkipNum(p+4);
-                p = SkipNum(p+1);
-                strcpy(lineNew, line);
-                strcat(lineNew, "pos=");
-                sprintf(s, "%.2f", pos.x);
-                strcat(lineNew, s);
-                strcat(lineNew, ";");
-                sprintf(s, "%.2f", pos.z);
-                strcat(lineNew, s);
-                strcat(lineNew, " ");
-                strcat(lineNew, p);
-            }
-        }
-
-        if (Cmd(line, "EndMissionTake") || Cmd(line, "AudioChange"))
-        {
-            char* p = strstr(line, "pos=");
-            if (p != 0)
-            {
-                Math::Vector pos = OpPos(line, "pos");
-                pos.x /= g_unit;
-                pos.y /= g_unit;
-                pos.z /= g_unit;
-                p[0] = 0;
-                p = SkipNum(p+4);
-                p = SkipNum(p+1);
-                strcpy(lineNew, line);
-                strcat(lineNew, "pos=");
-                sprintf(s, "%.2f", pos.x);
-                strcat(lineNew, s);
-                strcat(lineNew, ";");
-                sprintf(s, "%.2f", pos.z);
-                strcat(lineNew, s);
-                strcat(lineNew, " ");
-                strcat(lineNew, p);
-            }
-            strcpy(line, lineNew);
-
-            p = strstr(line, "dist=");
-            if (p != 0)
-            {
-                float value = OpFloat(line, "dist", 32.0f);
-                value /= g_unit;
-                p[0] = 0;
-                p = SkipNum(p+5);
-                strcpy(lineNew, line);
-                strcat(lineNew, "dist=");
-                sprintf(s, "%.2f", value);
-                strcat(lineNew, s);
-                strcat(lineNew, " ");
-                strcat(lineNew, p);
-            }
-            strcpy(line, lineNew);
-        }
-
-        if (Cmd(line, "Camera"))
-        {
-            char* p = strstr(line, "pos=");
-            if (p != 0)
-            {
-                Math::Vector pos = OpPos(line, "pos");
-                pos.x /= g_unit;
-                pos.y /= g_unit;
-                pos.z /= g_unit;
-                p[0] = 0;
-                p = SkipNum(p+4);
-                p = SkipNum(p+1);
-                strcpy(lineNew, line);
-                strcat(lineNew, "pos=");
-                sprintf(s, "%.2f", pos.x);
-                strcat(lineNew, s);
-                strcat(lineNew, ";");
-                sprintf(s, "%.2f", pos.z);
-                strcat(lineNew, s);
-                strcat(lineNew, " ");
-                strcat(lineNew, p);
-            }
-            strcpy(line, lineNew);
-
-            p = strstr(line, "h=");
-            if (p != 0)
-            {
-                float value = OpFloat(line, "h", 32.0f);
-                value /= g_unit;
-                p[0] = 0;
-                p = SkipNum(p+2);
-                strcpy(lineNew, line);
-                strcat(lineNew, "h=");
-                sprintf(s, "%.2f", value);
-                strcat(lineNew, s);
-                strcat(lineNew, " ");
-                strcat(lineNew, p);
-            }
-            strcpy(line, lineNew);
-        }
-
-        fputs(lineNew, fileNew);
-    }
-
-    fclose(fileNew);
-    fclose(file);
-}
-
 //! Load the scene for the character
 void CRobotMain::ScenePerso()
 {
@@ -3923,6 +3669,10 @@ void CRobotMain::CreateScene(bool soluce, bool fixScene, bool resetObject)
         m_terrain->FlushMaterials();
         m_audioTrack = "";
         m_audioRepeat = true;
+        m_satcomTrack  = "";
+        m_satcomRepeat = true;
+        m_editorTrack  = "";
+        m_editorRepeat = true;
         m_displayText->SetDelay(1.0f);
         m_displayText->SetEnable(true);
         m_immediatSatCom = false;
@@ -4028,8 +3778,10 @@ void CRobotMain::CreateScene(bool soluce, bool fixScene, bool resetObject)
             }
         }
 
-        if (Cmd(line, "MissionFile") && !resetObject)
+        if (Cmd(line, "MissionFile") && !resetObject) {
            m_version = OpInt(line, "version", 1);
+           continue;
+        }
 
         // TODO: Fallback to an non-localized entry
         sprintf(op, "Title.%c", m_app->GetLanguageChar());
@@ -4055,7 +3807,7 @@ void CRobotMain::CreateScene(bool soluce, bool fixScene, bool resetObject)
 
         static const boost::regex titleCmdRe("Title\\.[A-Z]");
         static const boost::regex resumeCmdRe("Resume\\.[A-Z]");
-        static const boost::regex scriptNameCmdRe("ScriptName\.[A-Z]");
+        static const boost::regex scriptNameCmdRe("ScriptName\\.[A-Z]");
 
         if (boost::regex_match(GetCmd(line), titleCmdRe)) continue; // Ignore
         if (boost::regex_match(GetCmd(line), resumeCmdRe)) continue; // Ignore
@@ -4071,7 +3823,7 @@ void CRobotMain::CreateScene(bool soluce, bool fixScene, bool resetObject)
         if (Cmd(line, "Instructions") && !resetObject)
         {
             OpString(line, "name", name);
-            std::string path = m_app->GetDataFilePath(DIR_HELP, name);
+            std::string path = CGameData::GetInstancePointer()->GetFilePath(DIR_HELP, name);
             strcpy(m_infoFilename[SATCOM_HUSTON], path.c_str());
 
             m_immediatSatCom = OpInt(line, "immediat", 0);
@@ -4083,7 +3835,7 @@ void CRobotMain::CreateScene(bool soluce, bool fixScene, bool resetObject)
         if (Cmd(line, "Satellite") && !resetObject)
         {
             OpString(line, "name", name);
-            std::string path = m_app->GetDataFilePath(DIR_HELP, name);
+            std::string path = CGameData::GetInstancePointer()->GetFilePath(DIR_HELP, name);
             strcpy(m_infoFilename[SATCOM_SAT], path.c_str());
             continue;
         }
@@ -4091,7 +3843,7 @@ void CRobotMain::CreateScene(bool soluce, bool fixScene, bool resetObject)
         if (Cmd(line, "Loading") && !resetObject)
         {
             OpString(line, "name", name);
-            std::string path = m_app->GetDataFilePath(DIR_HELP, name);
+            std::string path = CGameData::GetInstancePointer()->GetFilePath(DIR_HELP, name);
             strcpy(m_infoFilename[SATCOM_LOADING], path.c_str());
             continue;
         }
@@ -4099,14 +3851,14 @@ void CRobotMain::CreateScene(bool soluce, bool fixScene, bool resetObject)
         if (Cmd(line, "HelpFile") && !resetObject)
         {
             OpString(line, "name", name);
-            std::string path = m_app->GetDataFilePath(DIR_HELP, name);
+            std::string path = CGameData::GetInstancePointer()->GetFilePath(DIR_HELP, name);
             strcpy(m_infoFilename[SATCOM_PROG], path.c_str());
             continue;
         }
         if (Cmd(line, "SoluceFile") && !resetObject)
         {
             OpString(line, "name", name);
-            std::string path = m_app->GetDataFilePath(DIR_HELP, name);
+            std::string path = CGameData::GetInstancePointer()->GetFilePath(DIR_HELP, name);
             strcpy(m_infoFilename[SATCOM_SOLUCE], path.c_str());
             continue;
         }
@@ -4165,15 +3917,27 @@ void CRobotMain::CreateScene(bool soluce, bool fixScene, bool resetObject)
                     filenameStr << "music" << std::setfill('0') << std::setw(3) << trackid << ".ogg";
                     m_audioTrack = filenameStr.str();
                 }
+                m_audioRepeat = OpInt(line, "repeat", 1);
             }
             else
             {
                 char trackname[100];
-                OpString(line, "filename", trackname);
+                
+                OpString(line, "main", trackname);
                 m_audioTrack = trackname;
+                m_audioRepeat = OpInt(line, "mainRepeat", 1);
+                
+                OpString(line, "satcom", trackname);
+                m_satcomTrack = trackname;
+                m_satcomRepeat = OpInt(line, "satcomRepeat", 1);
+                
+                OpString(line, "editor", trackname);
+                m_editorTrack = trackname;
+                m_editorRepeat = OpInt(line, "editorRepeat", 1);
             }
-            m_audioRepeat = OpInt(line, "repeat", 1);
             if (m_audioTrack != "") m_sound->CacheMusic(m_audioTrack);
+            if (m_satcomTrack != "") m_sound->CacheMusic(m_satcomTrack);
+            if (m_editorTrack != "") m_sound->CacheMusic(m_editorTrack);
             continue;
         }
 
@@ -4353,6 +4117,12 @@ void CRobotMain::CreateScene(bool soluce, bool fixScene, bool resetObject)
 
             OpString(line, "image", name);
             m_terrain->LoadRelief(name, OpFloat(line, "factor", 1.0f), OpInt(line, "border", 1));
+            continue;
+        }
+        
+        if (Cmd(line, "TerrainRandomRelief") && !resetObject)
+        {
+            m_terrain->RandomizeRelief();
             continue;
         }
 
@@ -4571,6 +4341,7 @@ void CRobotMain::CreateScene(bool soluce, bool fixScene, bool resetObject)
         {
             m_controller = CObjectManager::GetInstancePointer()->CreateObject(Math::Vector(0.0f, 0.0f, 0.0f), 0.0f, OBJECT_CONTROLLER, 100.0f);
             m_controller->SetMagnifyDamage(100.0f);
+            m_controller->SetIgnoreBuildCheck(true);
             CBrain* brain = m_controller->GetBrain();
             if (brain != nullptr)
             {
@@ -4698,6 +4469,7 @@ void CRobotMain::CreateScene(bool soluce, bool fixScene, bool resetObject)
 
                 bool selectable = OpInt(line, "selectable", 1);
                 obj->SetSelectable(selectable);
+                obj->SetIgnoreBuildCheck(OpInt(line, "ignoreBuildCheck", 0));
                 obj->SetEnable(OpInt(line, "enable", 1));
                 obj->SetProxyActivate(OpInt(line, "proxyActivate", 0));
                 obj->SetProxyDistance(OpFloat(line, "proxyDistance", 15.0f)*g_unit);
@@ -4740,9 +4512,6 @@ void CRobotMain::CreateScene(bool soluce, bool fixScene, bool resetObject)
                     {
                         sprintf(op, "script%d", i+1);  // script1..script10
                         OpString(line, op, name);
-/* TODO: #if _SCHOOL
-                        if ( !m_dialog->GetSoluce4() && i == 3 )  continue;
-#endif*/
                         if (name[0] != 0)
                             brain->SetScriptName(i, name);
 
@@ -6046,6 +5815,9 @@ void CRobotMain::IOWriteObject(FILE *file, CObject* obj, const char *cmd)
 
     sprintf(name, " trainer=%d", obj->GetTrainer());
     strcat(line, name);
+    
+    sprintf(name, " ignoreBuildCheck=%d", obj->GetIgnoreBuildCheck());
+    strcat(line, name);
 
     sprintf(name, " option=%d", obj->GetOption());
     strcat(line, name);
@@ -6207,6 +5979,7 @@ CObject* CRobotMain::IOReadObject(char *line, const char* filename, int objRank)
     obj->SetDefRank(objRank);
     obj->SetPosition(0, pos);
     obj->SetAngle(0, dir);
+    obj->SetIgnoreBuildCheck(OpInt(line, "ignoreBuildCheck", 0));
     obj->SetID(id);
     if (g_id < id) g_id = id;
 
@@ -7217,6 +6990,26 @@ void CRobotMain::StartMusic()
     if (m_audioTrack != "")
     {
         m_sound->PlayMusic(m_audioTrack, m_audioRepeat, 0.0f);
+    }
+}
+
+//! Starts pause music
+void CRobotMain::StartPauseMusic(PauseType pause)
+{
+    switch(pause) {
+        case PAUSE_EDITOR:
+            if(m_editorTrack != "")
+                m_sound->PlayPauseMusic(m_editorTrack, m_editorRepeat);
+            break;
+            
+        case PAUSE_SATCOM:
+            if(m_satcomTrack != "")
+                m_sound->PlayPauseMusic(m_satcomTrack, m_satcomRepeat);
+            break;
+        
+        default:
+            // Don't change music
+            break;
     }
 }
 

@@ -1,18 +1,20 @@
 # Didier Raboud <odyx@debian.org>, 2012.
 msgid ""
 msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2012-12-27 17:09+0100\n"
+"POT-Creation-Date: 2014-07-10 16:50+0200\n"
 "PO-Revision-Date: 2012-12-27 14:07+0100\n"
 "Last-Translator: Didier Raboud <odyx@debian.org>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
 "Language: fr\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Generator: Lokalize 1.4\n"
 "X-Language: fr_FR\n"
 "X-Source-Language: en_US\n"
-"X-Generator: Lokalize 1.4\n"
 
 msgid " "
 msgstr " "
@@ -207,6 +209,9 @@ msgstr "Construit une tour"
 msgid "Build a derrick"
 msgstr "Construit un derrick"
 
+msgid "Build a destroyer"
+msgstr ""
+
 msgid "Build a exchange post"
 msgstr "Construit une borne d'information"
 
@@ -342,6 +347,12 @@ msgstr "Caméra à droite"
 msgid "Can not create this; there are too many objects"
 msgstr "Création impossible; il y a trop d'objets"
 
+msgid "Can not produce not researched object"
+msgstr ""
+
+msgid "Can not produce this object in this mission"
+msgstr ""
+
 msgid "Can't open file"
 msgstr "Ouverture du fichier impossible"
 
@@ -450,6 +461,9 @@ msgstr "Derrick"
 msgid "Descend\\Reduces the power of the jet"
 msgstr "Descendre\\Diminuer la puissance du réacteur"
 
+msgid "Destroy"
+msgstr ""
+
 msgid "Destroy the building"
 msgstr "Démolit le bâtiment"
 
@@ -528,6 +542,9 @@ msgstr "Programmation\\Exercices de programmation"
 
 msgid "Exit film\\Film at the exit of exercises"
 msgstr "Retour animé\\Retour animé dans les exercices"
+
+msgid "Explode (\\key action;)"
+msgstr ""
 
 msgid "Explosive"
 msgstr "Explosif"
@@ -626,10 +643,6 @@ msgstr "Jeu\\Options de jouabilité"
 msgid "Gantry crane"
 msgstr "Portique"
 
-#, c-format
-msgid "GetResource event num out of range: %d\n"
-msgstr ""
-
 msgid "Goto: destination occupied"
 msgstr "Goto: Destination occupée"
 
@@ -699,6 +712,9 @@ msgstr "Robot inadapté"
 msgid "Inappropriate cell type"
 msgstr "Pas le bon type de pile"
 
+msgid "Inappropriate object"
+msgstr ""
+
 msgid "Incorrect index type"
 msgstr "Mauvais type d'index"
 
@@ -734,6 +750,9 @@ msgstr "Instructions de Houston"
 
 msgid "Instructions\\Shows the instructions for the current mission"
 msgstr "Instructions mission\\Marche à suivre"
+
+msgid "Internal error - tell the developers"
+msgstr ""
 
 msgid "Jet temperature"
 msgstr "Température du réacteur"
@@ -803,9 +822,6 @@ msgstr "Marques sur le sol\\Marques dessinées sur le sol"
 
 msgid "Maximize"
 msgstr "Taille maximale"
-
-msgid "Menu (\\key quit;)"
-msgstr "Menu (\\key quit;)"
 
 msgid "Minimize"
 msgstr "Taille réduite"
@@ -916,6 +932,9 @@ msgstr "Pas assez d'énergie"
 
 msgid "Not enough energy yet"
 msgstr "Pas encore assez d'énergie"
+
+msgid "Not found anything to destroy"
+msgstr ""
 
 msgid "Not yet enough energy"
 msgstr "Pas encore assez d'énergie"
@@ -1953,6 +1972,9 @@ msgstr "www.epsitec.com"
 
 #~ msgid "Left Windows"
 #~ msgstr "Left Windows"
+
+#~ msgid "Menu (\\key quit;)"
+#~ msgstr "Menu (\\key quit;)"
 
 #~ msgid "Mini-map"
 #~ msgstr "Mini-carte"

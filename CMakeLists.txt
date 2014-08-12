@@ -13,7 +13,7 @@ project(colobot C CXX)
 set(COLOBOT_VERSION_CODENAME "Gold")
 set(COLOBOT_VERSION_MAJOR    0)
 set(COLOBOT_VERSION_MINOR    1)
-set(COLOBOT_VERSION_REVISION 2)
+set(COLOBOT_VERSION_REVISION 3)
 
 # Used on official releases
 #set(COLOBOT_VERSION_RELEASE_CODENAME "-alpha")
@@ -25,9 +25,11 @@ if(DEFINED COLOBOT_VERSION_UNRELEASED)
     if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
         find_package(Git)
         execute_process(COMMAND ${GIT_EXECUTABLE} rev-parse --abbrev-ref HEAD
+                        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
                         OUTPUT_VARIABLE GIT_BRANCH
                         OUTPUT_STRIP_TRAILING_WHITESPACE)
         execute_process(COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
+                        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
                         OUTPUT_VARIABLE GIT_REVISION
                         OUTPUT_STRIP_TRAILING_WHITESPACE)
         set(COLOBOT_VERSION_UNRELEASED "${COLOBOT_VERSION_UNRELEASED}-git-${GIT_BRANCH}~r${GIT_REVISION}")
@@ -292,43 +294,6 @@ endif()
 # Targets
 ##
 
-if(TESTS)
-    # Google Test library
-    find_path(GTEST_SRC_DIR NAMES src/gtest.cc src/gtest-all.cc PATHS /usr/src PATH_SUFFIXES gtest)
-    find_path(GTEST_INCLUDE_DIR gtest/gtest.h PATHS /usr/include)
-    if(NOT(FORCE_BUNDLED_GTEST) AND GTEST_SRC_DIR AND GTEST_INCLUDE_DIR)
-        message(STATUS "Using system gtest library in ${GTEST_SRC_DIR}")
-    else()
-        message(STATUS "Using bundled gtest library")
-        set(GTEST_SRC_DIR ${colobot_SOURCE_DIR}/lib/gtest)
-        set(GTEST_INCLUDE_DIR ${colobot_SOURCE_DIR}/lib/gtest/include)
-    endif()
-
-    add_subdirectory(${GTEST_SRC_DIR} lib/gtest)
-
-    # Google Mock library
-    find_path(GMOCK_SRC_DIR NAMES src/gmock.cc src/gmock-all.cc PATHS /usr/src PATH_SUFFIXES gmock)
-    find_path(GMOCK_INCLUDE_DIR gmock/gmock.h PATHS /usr/include)
-    if(NOT(FORCE_BUNDLED_GMOCK) AND GMOCK_SRC_DIR AND GMOCK_INCLUDE_DIR)
-        message(STATUS "Using system gmock library in ${GMOCK_SRC_DIR}")
-
-        include_directories(${GMOCK_SRC_DIR})
-        # gmock-all.cc includes all other sources
-        add_library(gmock STATIC ${GMOCK_SRC_DIR}/src/gmock-all.cc)
-    else()
-        message(STATUS "Using bundled gmock library")
-        set(GMOCK_SRC_DIR ${colobot_SOURCE_DIR}/lib/gmock)
-        set(GMOCK_INCLUDE_DIR ${colobot_SOURCE_DIR}/lib/gmock/include)
-        add_subdirectory(${GMOCK_SRC_DIR} lib/gmock)
-    endif()
-
-
-    # Tests targets
-    enable_testing()
-    add_subdirectory(test)
-
-endif()
-
 # Installation paths defined before compiling sources
 if(PLATFORM_WINDOWS)
     if(MXE)
@@ -366,6 +331,43 @@ add_subdirectory(po)
 
 if(DESKTOP)
     add_subdirectory(desktop)
+endif()
+
+if(TESTS)
+    # Google Test library
+    find_path(GTEST_SRC_DIR NAMES src/gtest.cc src/gtest-all.cc PATHS /usr/src PATH_SUFFIXES gtest)
+    find_path(GTEST_INCLUDE_DIR gtest/gtest.h PATHS /usr/include)
+    if(NOT(FORCE_BUNDLED_GTEST) AND GTEST_SRC_DIR AND GTEST_INCLUDE_DIR)
+        message(STATUS "Using system gtest library in ${GTEST_SRC_DIR}")
+    else()
+        message(STATUS "Using bundled gtest library")
+        set(GTEST_SRC_DIR ${colobot_SOURCE_DIR}/lib/gtest)
+        set(GTEST_INCLUDE_DIR ${colobot_SOURCE_DIR}/lib/gtest/include)
+    endif()
+
+    add_subdirectory(${GTEST_SRC_DIR} lib/gtest)
+
+    # Google Mock library
+    find_path(GMOCK_SRC_DIR NAMES src/gmock.cc src/gmock-all.cc PATHS /usr/src PATH_SUFFIXES gmock)
+    find_path(GMOCK_INCLUDE_DIR gmock/gmock.h PATHS /usr/include)
+    if(NOT(FORCE_BUNDLED_GMOCK) AND GMOCK_SRC_DIR AND GMOCK_INCLUDE_DIR)
+        message(STATUS "Using system gmock library in ${GMOCK_SRC_DIR}")
+
+        include_directories(${GMOCK_SRC_DIR})
+        # gmock-all.cc includes all other sources
+        add_library(gmock STATIC ${GMOCK_SRC_DIR}/src/gmock-all.cc)
+    else()
+        message(STATUS "Using bundled gmock library")
+        set(GMOCK_SRC_DIR ${colobot_SOURCE_DIR}/lib/gmock)
+        set(GMOCK_INCLUDE_DIR ${colobot_SOURCE_DIR}/lib/gmock/include)
+        add_subdirectory(${GMOCK_SRC_DIR} lib/gmock)
+    endif()
+
+
+    # Tests targets
+    enable_testing()
+    add_subdirectory(test)
+
 endif()
 
 
