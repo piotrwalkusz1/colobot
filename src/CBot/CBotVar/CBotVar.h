@@ -299,26 +299,7 @@ public:
      */
     bool IsStatic();
 
-    /**
-     * \enum ProtectionLevel
-     * \brief Class member protection level (public/protected/private)
-     */
-    enum class ProtectionLevel
-    {
-        Public = 0,    //!< public variable
-        ReadOnly = 1,  //!< read only (can't be set from CBot, only from the engine)
-        Protected = 2, //!< protected
-        Private = 3    //!< private
-    };
-
-    /**
-     * \brief Sets variable protection level
-     *
-     * Useful only for class members
-     *
-     * \param mPrivate New protection level
-     */
-    void SetPrivate(ProtectionLevel mPrivate);
+    void SetProtectionLevel(ProtectionLevel protectionLevel);
 
     /**
      * \brief Checks if the variable is accessible at the given protection level
@@ -329,11 +310,7 @@ public:
      */
     bool IsPrivate(ProtectionLevel level = ProtectionLevel::Protected);
 
-    /**
-     * \brief Get variable protection level
-     * \return Variable protection level
-     */
-    ProtectionLevel GetPrivate();
+    ProtectionLevel GetProtectionLevel();
 
     /**
      * \brief Check if a variable belongs to a class with a given name
@@ -666,7 +643,7 @@ protected:
     //! true if the variable is static (for classes)
     bool m_bStatic;
     //! Element protection level - public, protected or private (for classes)
-    ProtectionLevel m_mPrivate;
+    ProtectionLevel m_protectionLevel;
     //! Expression describing initial value
     CBotInstr* m_InitExpr;
     //! Expression describing array limit

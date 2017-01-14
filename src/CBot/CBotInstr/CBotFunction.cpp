@@ -46,13 +46,12 @@ CBotFunction::CBotFunction()
 {
     m_param = nullptr;            // empty parameter list
     m_block = nullptr;            // the instruction block
-    m_bPublic    = false;           // function not public
+    m_protectionLevel = ProtectionLevel::Private;
     m_bExtern    = false;           // function not extern
     m_pProg      = nullptr;
-//  m_nThisIdent = 0;
     m_nFuncIdent = 0;
     m_bSynchro    = false;
-    m_MasterClass = nullptr;
+    m_masterClass = nullptr;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -64,17 +63,24 @@ CBotFunction::~CBotFunction()
     delete m_param;                // empty parameter list
     delete m_block;                // the instruction block
 
-    // remove public list if there is
-    if (m_bPublic)
-    {
-        m_publicFunctions.erase(this);
-    }
+    m_publicFunctions.erase(this); // delete if public
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 bool CBotFunction::IsPublic()
 {
-    return m_bPublic;
+    return m_protectionLevel == ProtectionLevel::Public;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+ProtectionLevel CBotFunction::GetAbsoluteProtectionLevel()
+{
+    if ( m_masterClass && m_masterClass->IsProtectionLevelMoreRestrictedThan(m_protectionLevel) )
+    {
+        return m_masterClass->GetProtectionLevel();
+    }
+
+    return m_protectionLevel;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -140,7 +146,7 @@ CBotFunction* CBotFunction::Compile(CBotToken* &p, CBotCStack* pStack, CBotFunct
     {
         if ( IsOfType(p, ID_PUBLIC) )
         {
-            func->m_bPublic = true;
+            func->m_protectionLevel = ProtectionLevel::Public;
             continue;
         }
         pp = p;
@@ -148,7 +154,6 @@ CBotFunction* CBotFunction::Compile(CBotToken* &p, CBotCStack* pStack, CBotFunct
         {
             func->m_extern = *pp;        // for the position of the word "extern"
             func->m_bExtern = true;
-//          func->m_bPublic = true;     // therefore also public!
             continue;
         }
         break;
@@ -178,7 +183,7 @@ CBotFunction* CBotFunction::Compile(CBotToken* &p, CBotCStack* pStack, CBotFunct
 
                 if ( masterClass == nullptr ) goto bad;
 
-                func->m_MasterClass = masterClass;
+                func->m_masterClass = masterClass;
                 func->m_classToken = *pp;
 
                 func->m_token = *p;
@@ -191,10 +196,10 @@ CBotFunction* CBotFunction::Compile(CBotToken* &p, CBotCStack* pStack, CBotFunct
             {
                 pStk->SetRetType(func->m_retTyp);   // for knowledge what type returns
 
-                if (func->m_MasterClass)
+                if (func->m_masterClass)
                 {
                     // return "this" known
-                    CBotVar* pThis = CBotVar::Create("this", CBotTypResult( CBotTypClass, func->m_MasterClass ));
+                    CBotVar* pThis = CBotVar::Create("this", CBotTypResult( CBotTypClass, func->m_masterClass ));
                     pThis->SetInit(CBotVar::InitType::IS_POINTER);
 //                  pThis->SetUniqNum(func->m_nThisIdent = -2); //CBotVar::NextUniqNum() will not
                     pThis->SetUniqNum(-2);
@@ -210,7 +215,7 @@ CBotFunction* CBotFunction::Compile(CBotToken* &p, CBotCStack* pStack, CBotFunct
                         CBotVar* pcopy = CBotVar::Create(pv);
 //                      pcopy->SetInit(2);
                         pcopy->Copy(pv);
-                        pcopy->SetPrivate(pv->GetPrivate());
+                        pcopy->SetProtectionLevel(pv->GetProtectionLevel());
 //                      pcopy->SetUniqNum(pv->GetUniqNum()); //num++);
                         pStk->AddVar(pcopy);
                         pv = pv->GetNext();
@@ -330,23 +335,23 @@ bool CBotFunction::Execute(CBotVar** ppVars, CBotStack* &pj, CBotVar* pInstance)
         pile->IncState();
     }
 
-    if ( pile->GetState() == 1 && m_MasterClass )
+    if ( pile->GetState() == 1 && m_masterClass )
     {
         // makes "this" known
         CBotVar* pThis = nullptr;
         if ( pInstance == nullptr )
         {
-            pThis = CBotVar::Create("this", CBotTypResult( CBotTypClass, m_MasterClass ));
+            pThis = CBotVar::Create("this", CBotTypResult( CBotTypClass, m_masterClass ));
         }
         else
         {
-            if (m_MasterClass != pInstance->GetClass())
+            if (m_masterClass != pInstance->GetClass())
             {
                 pile->SetError(CBotErrBadType2, &m_classToken);
                 return false;
             }
 
-            pThis = CBotVar::Create("this", CBotTypResult( CBotTypPointer, m_MasterClass ));
+            pThis = CBotVar::Create("this", CBotTypResult( CBotTypPointer, m_masterClass ));
             pThis->SetPointer(pInstance);
         }
         assert(pThis != nullptr);
@@ -391,7 +396,7 @@ void CBotFunction::RestoreState(CBotVar** ppVars, CBotStack* &pj, CBotVar* pInst
 
     m_param->RestoreState(pile2, true);                 // parameters
 
-    if ( m_MasterClass )
+    if ( m_masterClass )
     {
         CBotVar* pThis = pile->FindVar("this");
         pThis->SetInit(CBotVar::InitType::IS_POINTER);
@@ -611,24 +616,24 @@ int CBotFunction::DoCall(CBotProgram* program, const std::list<CBotFunction*>& l
 
         if ( pStk1->GetState() == 0 )
         {
-            if ( pt->m_MasterClass )
+            if ( pt->m_masterClass )
             {
                 CBotVar* pInstance = program->m_thisVar;
                 // make "this" known
                 CBotVar* pThis ;
                 if ( pInstance == nullptr )
                 {
-                    pThis = CBotVar::Create("this", CBotTypResult( CBotTypClass, pt->m_MasterClass ));
+                    pThis = CBotVar::Create("this", CBotTypResult( CBotTypClass, pt->m_masterClass ));
                 }
                 else
                 {
-                    if (pt->m_MasterClass != pInstance->GetClass())
+                    if (pt->m_masterClass != pInstance->GetClass())
                     {
                         pStack->SetError(CBotErrBadType2, &pt->m_classToken);
                         return false;
                     }
 
-                    pThis = CBotVar::Create("this", CBotTypResult( CBotTypPointer, pt->m_MasterClass ));
+                    pThis = CBotVar::Create("this", CBotTypResult( CBotTypPointer, pt->m_masterClass ));
                     pThis->SetPointer(pInstance);
                 }
                 assert(pThis != nullptr);
@@ -700,7 +705,7 @@ void CBotFunction::RestoreCall(const std::list<CBotFunction*>& localFunctionList
         // preparing parameters on the stack
 
         {
-            if ( pt->m_MasterClass )
+            if ( pt->m_masterClass )
             {
 //                CBotVar* pInstance = m_pProg->m_thisVar;
                 // make "this" known

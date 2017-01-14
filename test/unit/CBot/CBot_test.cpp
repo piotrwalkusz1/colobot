@@ -754,7 +754,7 @@ TEST_F(CBotUT, PublicFunctions)
     );
 }
 
-TEST_F(CBotUT, ClassConstructor)
+TEST_F(CBotUT, PublicClassConstructor)
 {
     ExecuteTest(
         "public class TestClass {\n"
@@ -777,6 +777,67 @@ TEST_F(CBotUT, ClassConstructor)
         "    ASSERT(t3.instanceCounter == 2);\n"
         "    ASSERT(t3 != null);\n"
         "    ASSERT(t3 != t1);\n"
+        "}\n"
+    );
+
+    ExecuteTest(
+        "public class TestClass {\n"
+        "    public static int instanceCounter = 0;\n"
+        "    public void TestClass() {\n"
+        "        instanceCounter++;\n"
+        "    }\n"
+        "}\n"
+        "\n"
+        "extern void ClassConstructor()\n"
+        "{\n"
+        "    TestClass t1();\n"
+        "    TestClass t2 = new TestClass();\n"
+        "    TestClass t3 = new TestClass(), t4();\n"
+        "    ASSERT(t1.instanceCounter == 4);\n"
+        "}\n"
+    );
+}
+
+TEST_F(CBotUT, PrivateClassConstructor)
+{
+    ExecuteTest(
+        "private class TestClass {\n"
+        "    public static int instanceCounter = 0;\n"
+        "    public void TestClass() {\n"
+        "        instanceCounter++;\n"
+        "    }\n"
+        "}\n"
+        "\n"
+        "extern void ClassConstructor()\n"
+        "{\n"
+        "    TestClass t1();\n"
+        "    ASSERT(t1.instanceCounter == 1);\n"
+        "    ASSERT(t1 != null);\n"
+        "    TestClass t2; // not calling the constructor!\n"
+        "    ASSERT(t1.instanceCounter == 1);\n"
+        //"    ASSERT(t2 == null);\n" // TODO: I was pretty sure that's how it worked, but apparently not...
+        "    TestClass t3 = new TestClass();\n"
+        "    ASSERT(t1.instanceCounter == 2);\n"
+        "    ASSERT(t3.instanceCounter == 2);\n"
+        "    ASSERT(t3 != null);\n"
+        "    ASSERT(t3 != t1);\n"
+        "}\n"
+    );
+
+    ExecuteTest(
+        "private class TestClass {\n"
+        "    public static int instanceCounter = 0;\n"
+        "    public void TestClass() {\n"
+        "        instanceCounter++;\n"
+        "    }\n"
+        "}\n"
+        "\n"
+        "extern void ClassConstructor()\n"
+        "{\n"
+        "    TestClass t1();\n"
+        "    TestClass t2 = new TestClass();\n"
+        "    TestClass t3 = new TestClass(), t4();\n"
+        "    ASSERT(t1.instanceCounter == 4);\n"
         "}\n"
     );
 }
@@ -968,6 +1029,21 @@ TEST_F(CBotUT, ClassPrivate)
     ExecuteTest(
         "private class Something\n"
         "{\n"
+        "}\n"
+    );
+}
+
+TEST_F(CBotUT, ClassPrivateAsMember)
+{
+    ExecuteTest(
+        "private class Test\n"
+        "{\n"
+        "}\n"
+        "public class PublicClass\n"
+        "{\n"
+        "    Test t1;\n"
+        //"    Test t2();\n"     TODO : compilator thinks that is function definition and throw error (I don't know if it is correct behaviour )
+        "    Test t3 = new Test();\n"
         "}\n"
     );
 }
@@ -1212,6 +1288,101 @@ TEST_F(CBotUT, DefineClassWithBadAccessPrivilege)
         "{\n"
         "}\n",
         CBotErrBadPrivilege
+    );
+}
+
+TEST_F(CBotUT, DefineClassWithTwoAccessPrivilege)
+{
+    ExecuteTest(
+        "public public class TestClass\n"
+        "{\n"
+        "}\n",
+        CBotErrClassExpected
+    );
+
+    ExecuteTest(
+       "public private class TestClass\n"
+       "{\n"
+       "}\n",
+       CBotErrClassExpected
+    );
+
+    ExecuteTest(
+       "private private class TestClass\n"
+       "{\n"
+       "}\n",
+       CBotErrClassExpected
+    );
+}
+
+TEST_F(CBotUT, DefineClassWithBadModifier)
+{
+    ExecuteTest(
+        "public extern class TestClass\n"
+        "{\n"
+        "}\n",
+        CBotErrClassExpected
+    );
+
+    ExecuteTest(
+        "extern public class TestClass\n"
+        "{\n"
+        "}\n",
+        CBotErrNoPrivilege
+    );
+
+    ExecuteTest(
+        "static public class TestClass\n"
+        "{\n"
+        "}\n",
+        CBotErrNoPrivilege
+    );
+}
+
+TEST_F(CBotUT, DefineClassWithBadName)
+{
+    ExecuteTest(
+        "public class class\n"
+        "{\n"
+        "}\n",
+        CBotErrClassNameExpected
+    );
+
+    ExecuteTest(
+       "public class while\n"
+       "{\n"
+       "}\n",
+       CBotErrClassNameExpected
+    );
+
+    ExecuteTest(
+       "public class\n"
+       "{\n"
+       "}\n",
+       CBotErrClassNameExpected
+    );
+}
+
+TEST_F(CBotUT, DefineFunctionReturningClass)
+{
+    ExecuteTest(
+        "public class Test\n"
+        "{\n"
+        "}\n"
+        "public Test Foo()\n"
+        "{\n"
+        "     return new Test();\n"
+        "}\n"
+    );
+
+    ExecuteTest(
+        "public Test Foo()\n"
+        "{\n"
+        "     return new Test();\n"
+        "}\n"
+        "public class Test\n"
+        "{\n"
+        "}\n"
     );
 }
 

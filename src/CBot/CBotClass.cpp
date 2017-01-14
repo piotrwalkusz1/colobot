@@ -37,6 +37,7 @@
 #include "CBot/CBotDefParam.h"
 #include "CBot/CBotUtils.h"
 #include "CBot/CBotFileUtils.h"
+#include "CBot/CBotParser.h"
 
 #include <algorithm>
 
@@ -46,23 +47,24 @@ namespace CBot
 ////////////////////////////////////////////////////////////////////////////////
 std::set<CBotClass*> CBotClass::m_publicClasses{};
 
+unsigned long CBotClass::m_nextItemId = 1;
+
 ////////////////////////////////////////////////////////////////////////////////
 CBotClass::CBotClass(const std::string& name,
                      CBotClass* parent,
                      bool bIntrinsic,
-                     bool isPrivate)
+                     ProtectionLevel protectionLevel)
 {
     m_parent    = parent;
     m_name      = name;
-    m_isPrivate = isPrivate;
+    m_protectionLevel = protectionLevel;
     m_pVar      = nullptr;
     m_externalMethods = new CBotExternalCallList();
     m_rUpdate   = nullptr;
     m_IsDef     = true;
     m_bIntrinsic= bIntrinsic;
-    m_nbVar     = m_parent == nullptr ? 0 : m_parent->m_nbVar;
 
-    if (!isPrivate) m_publicClasses.insert(this);
+    if (IsPublic()) m_publicClasses.insert(this);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -83,6 +85,19 @@ CBotClass* CBotClass::Create(const std::string& name,
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+bool CBotClass::IsClassNameAlreadyTaken(const std::string& name, CBotProgram* program, ProtectionLevel protectionLevel)
+{
+    if (protectionLevel == ProtectionLevel::Public)
+    {
+        return CBotClass::Exists(name, program);   //check in current program and list of public classes
+    }
+    else
+    {
+        return program->ClassExists(name);         // check only in current program
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
 void CBotClass::ClearPublic()
 {
     m_publicClasses.clear();
@@ -99,8 +114,7 @@ void CBotClass::Purge()
     for (CBotFunction* f : m_pMethod) delete f;
     m_pMethod.clear();
     m_IsDef     = false;
-
-    m_nbVar     = m_parent == nullptr ? 0 : m_parent->m_nbVar;
+    m_parent    = nullptr;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -158,13 +172,13 @@ void CBotClass::FreeLock(CBotProgram* prog)
 ////////////////////////////////////////////////////////////////////////////////
 bool CBotClass::AddItem(std::string name,
                         CBotTypResult type,
-                        CBotVar::ProtectionLevel mPrivate)
+                        ProtectionLevel protectionLevel)
 {
     CBotClass*  pClass = type.GetClass();
 
     CBotVar*    pVar = CBotVar::Create( name, type );
 /// pVar->SetUniqNum(CBotVar::NextUniqNum());
-    pVar->SetPrivate( mPrivate );
+    pVar->SetProtectionLevel( protectionLevel );
 
     if ( pClass != nullptr )
     {
@@ -183,7 +197,7 @@ bool CBotClass::AddItem(std::string name,
 ////////////////////////////////////////////////////////////////////////////////
 bool CBotClass::AddItem(CBotVar* pVar)
 {
-    pVar->SetUniqNum(++m_nbVar);
+    pVar->SetUniqNum(m_nextItemId++);
 
     if ( m_pVar == nullptr ) m_pVar = pVar;
     else m_pVar->AddNext(pVar);
@@ -254,6 +268,22 @@ CBotVar* CBotClass::GetItemRef(int nIdent)
 bool CBotClass::IsIntrinsic()
 {
     return  m_bIntrinsic;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+bool CBotClass::IsPublic()
+{
+    return m_protectionLevel == ProtectionLevel::Public;
+}
+
+bool CBotClass::IsProtectionLevelMoreRestrictedThan(ProtectionLevel protectionLevel)
+{
+    return m_protectionLevel > protectionLevel;
+}
+
+ProtectionLevel CBotClass::GetProtectionLevel()
+{
+    return m_protectionLevel;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -461,73 +491,46 @@ CBotClass* CBotClass::Compile1(CBotToken* &p, CBotCStack* pStack)
 {
     CBotProgram* program = pStack->GetProgram();
 
-    bool isPrivate;
+    ProtectionLevel protectionLevel = CBotParser::ReadAccessModifier(p);
 
-    if ( IsOfType(p, ID_PUBLIC) ) isPrivate = false;
-    else if ( IsOfType(p, ID_PRIVATE) ) isPrivate = true;
-    else if ( IsOfType(p, ID_PROTECTED) )
+    switch (protectionLevel)
     {
+    case ProtectionLevel::Public:
+    case ProtectionLevel::Private:
+        break;
+    case ProtectionLevel::None:
+        pStack->SetError( CBotErrNoPrivilege, p );
+        return nullptr;
+    default:
         pStack->SetError( CBotErrBadPrivilege, p );
         return nullptr;
     }
-    else
-    {
-        pStack->SetError( CBotErrNoPrivilege, p );
-        return nullptr;
-    }
 
-    IsOfType(p, ID_CLASS); // skip class keyword
+    if (CBotParser::RequireType(p, ID_CLASS, pStack, CBotErrClassExpected)) return nullptr;
 
-    std::string name = p->GetString(); // name of class
+    std::string className = p->GetString();
+    if (CBotParser::RequireType(p, TokenTypVar, pStack, CBotErrClassNameExpected)) return nullptr;
 
-    if ( (isPrivate && program->ClassExists(name)) ||            // check only in current program
-         (!isPrivate && CBotClass::Exists(name, program)) )      // check in current program and list of public classes
+    if (CBotClass::IsClassNameAlreadyTaken(className, program, protectionLevel))
     {
         pStack->SetError( CBotErrRedefClass, p );
         return nullptr;
     }
 
-    // a name of the class is there?
-    if (IsOfType(p, TokenTypVar))
+    if ( IsOfType( p, ID_EXTENDS ) )
     {
-        CBotClass* pPapa = nullptr;
-        if ( IsOfType( p, ID_EXTENDS ) )
-        {
-            std::string name = p->GetString();
-            pPapa = CBotClass::Find(name, program);
-
-            if (!IsOfType(p, TokenTypVar) || pPapa == nullptr )
-            {
-                pStack->SetError( CBotErrNotClass, p );
-                return nullptr;
-            }
-        }
-        CBotClass* classe = new CBotClass(name, pPapa, false, isPrivate);
-        classe->Purge();
-
-        classe->m_pOpenblk = p;
-
-        if ( !IsOfType( p, ID_OPBLK) )
-        {
-            pStack->SetError(CBotErrOpenBlock, p);
-            return nullptr;
-        }
-
-        int level = 1;
-        while (level > 0 && p != nullptr)
-        {
-            int type = p->GetType();
-            p = p->GetNext();
-            if (type == ID_OPBLK) level++;
-            if (type == ID_CLBLK) level--;
-        }
-
-        if (level > 0) pStack->SetError(CBotErrCloseBlock, classe->m_pOpenblk);
-
-        if (pStack->IsOk()) return classe;
+        if (CBotParser::RequireType(p, TokenTypVar, pStack, CBotErrNotClass)) return nullptr;
     }
-    pStack->SetError(CBotErrNoTerminator, p);
-    return nullptr;
+
+    CBotClass* classe = new CBotClass(className, nullptr, false, protectionLevel);
+    classe->Purge();
+
+    classe->m_pOpenblk = p;
+
+    CBotParser::ValidateBlock(p, pStack);
+
+    if (pStack->IsOk()) return classe;
+    else return nullptr;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -535,8 +538,6 @@ void CBotClass::DefineClasses(std::list<CBotClass*> pClassList, CBotCStack* pSta
 {
     for (CBotClass* pClass : pClassList)
     {
-        CBotClass* pParent = pClass->m_parent;
-        pClass->m_nbVar = (pParent == nullptr) ? 0 : pParent->m_nbVar;
         CBotToken* p = pClass->m_pOpenblk->GetNext();
 
         while (pStack->IsOk() && !IsOfType(p, ID_CLBLK))
@@ -552,7 +553,7 @@ void CBotClass::DefineClasses(std::list<CBotClass*> pClassList, CBotCStack* pSta
 bool CBotClass::CompileDefItem(CBotToken* &p, CBotCStack* pStack, bool bSecond)
 {
     bool    bStatic = false;
-    CBotVar::ProtectionLevel mProtect = CBotVar::ProtectionLevel::Public;
+    ProtectionLevel protectionLevel = ProtectionLevel::Public;
     bool    bSynchro = false;
 
     while (IsOfType(p, ID_SEP)) ;
@@ -563,12 +564,11 @@ bool CBotClass::CompileDefItem(CBotToken* &p, CBotCStack* pStack, bool bSecond)
     CBotToken*      pBase = p;
 
     if ( IsOfType(p, ID_STATIC) ) bStatic = true;
-    if ( IsOfType(p, ID_PUBLIC) ) mProtect = CBotVar::ProtectionLevel::Public;
-    if ( IsOfType(p, ID_PRIVATE) ) mProtect = CBotVar::ProtectionLevel::Private;
-    if ( IsOfType(p, ID_PROTECTED) ) mProtect = CBotVar::ProtectionLevel::Protected;
+    if ( IsOfType(p, ID_PUBLIC) ) protectionLevel = ProtectionLevel::Public;
+    if ( IsOfType(p, ID_PRIVATE) ) protectionLevel = ProtectionLevel::Private;
+    if ( IsOfType(p, ID_PROTECTED) ) protectionLevel = ProtectionLevel::Protected;
     if ( IsOfType(p, ID_STATIC) ) bStatic = true;
 
-//  CBotClass* pClass = nullptr;
     type = TypeParam(p, pStack);        // type of the result
 
     if ( type.Eq(-1) )
@@ -580,10 +580,10 @@ bool CBotClass::CompileDefItem(CBotToken* &p, CBotCStack* pStack, bool bSecond)
     while (pStack->IsOk())
     {
         CBotTypResult  type2 = CBotTypResult(type);                     // reset type after comma
-        std::string pp = p->GetString();
+        std::string name = p->GetString();
         if ( IsOfType(p, ID_NOT) )
         {
-            pp = std::string("~") + p->GetString();
+            name = std::string("~") + p->GetString();
         }
 
         if (IsOfType(p, TokenTypVar))
@@ -634,14 +634,14 @@ bool CBotClass::CompileDefItem(CBotToken* &p, CBotCStack* pStack, bool bSecond)
                     CBotDefParam* params = CBotDefParam::Compile(p, pStk );
                     delete pStk;
                     p = ppp;
-                    std::list<CBotFunction*>::iterator pfIter = std::find_if(m_pMethod.begin(), m_pMethod.end(), [&pp, &params](CBotFunction* x)
+                    std::list<CBotFunction*>::iterator pfIter = std::find_if(m_pMethod.begin(), m_pMethod.end(), [&name, &params](CBotFunction* x)
                     {
-                        return x->GetName() == pp && x->CheckParam( params );
+                        return x->GetName() == name && x->CheckParam( params );
                     });
                     assert(pfIter != m_pMethod.end());
                     CBotFunction* pf = *pfIter;
 
-                    bool bConstructor = (pp == GetName());
+                    bool bConstructor = (name == GetName());
                     CBotCStack* pile = pStack->TokenStack(nullptr, true);
 
                     // make "this" known
@@ -673,7 +673,7 @@ bool CBotClass::CompileDefItem(CBotToken* &p, CBotCStack* pStack, bool bSecond)
                                 initType = CBotVar::InitType::DEF;
                             pcopy->SetInit(initType);
                             pcopy->SetUniqNum(pv->GetUniqNum());
-                            pcopy->SetPrivate(pv->GetPrivate());
+                            pcopy->SetProtectionLevel(pv->GetProtectionLevel());
                             pile->AddVar(pcopy);
                             pv = pv->GetNext();
                         }
@@ -697,7 +697,7 @@ bool CBotClass::CompileDefItem(CBotToken* &p, CBotCStack* pStack, bool bSecond)
             }
 
             // definition of an element
-            if (type2.Eq(0))
+            if (type2.Eq(CBotTypVoid))
             {
                 pStack->SetError(CBotErrNoTerminator, p);
                 return false;
@@ -746,9 +746,9 @@ bool CBotClass::CompileDefItem(CBotToken* &p, CBotCStack* pStack, bool bSecond)
 
             if ( !bSecond )
             {
-                CBotVar*    pv = CBotVar::Create(pp, type2);
+                CBotVar*    pv = CBotVar::Create(name, type2);
                 pv -> SetStatic( bStatic );
-                pv -> SetPrivate( mProtect );
+                pv -> SetProtectionLevel( protectionLevel );
 
                 AddItem( pv );
 
@@ -787,51 +787,40 @@ CBotClass* CBotClass::Compile(CBotToken* &p, CBotCStack* pStack)
 {
     CBotProgram* program = pStack->GetProgram();
 
-    // skip public, private and class keywords
-    IsOfType(p, ID_PUBLIC);
-    IsOfType(p, ID_PRIVATE);
-    IsOfType(p, ID_CLASS);
+    CBotParser::SkipTokens(p, {ID_PUBLIC, ID_PRIVATE, ID_CLASS});
 
-    std::string name = p->GetString();
+    std::string className = p->GetString();
+    p = p->GetNext();
 
-    // a name for the class is there?
-    if (IsOfType(p, TokenTypVar))
+    CBotClass* cbotClass = CBotClass::Find(className, program);     // the class was created by Compile1
+
+    if ( IsOfType( p, ID_EXTENDS ) )
     {
-        // the class was created by Compile1
-        CBotClass* pOld = CBotClass::Find(name, program);
+        std::string parentClassName = p->GetString();
+        p = p->GetNext();
 
-        if ( IsOfType( p, ID_EXTENDS ) )
+        cbotClass->m_parent = CBotClass::Find(parentClassName, program);
+
+        if (cbotClass->m_parent == nullptr)
         {
-            // TODO: Not sure how correct is that - I have no idea how the precompilation (Compile1 method) works ~krzys_h
-            std::string name = p->GetString();
-            CBotClass* pPapa = CBotClass::Find(name, program);
-
-            if (!IsOfType(p, TokenTypVar) || pPapa == nullptr)
-            {
-                pStack->SetError( CBotErrNotClass, p );
-                return nullptr;
-            }
-            pOld->m_parent = pPapa;
+            pStack->SetError(CBotErrNotClass, p);
+            return nullptr;
         }
-        else
-        {
-            if (pOld != nullptr)
-            {
-                pOld->m_parent = nullptr;
-            }
-        }
-        IsOfType( p, ID_OPBLK); // necessarily
-
-        while ( pStack->IsOk() && !IsOfType( p, ID_CLBLK ) )
-        {
-            pOld->CompileDefItem(p, pStack, true);
-        }
-
-        pOld->m_IsDef = true;           // complete definition
-        if (pStack->IsOk()) return pOld;
     }
-    pStack->SetError(CBotErrNoTerminator, p);
-    return nullptr;
+
+    IsOfType( p, ID_OPBLK);
+
+    while ( pStack->IsOk() && !IsOfType( p, ID_CLBLK ) )
+    {
+        cbotClass->CompileDefItem(p, pStack, true);
+    }
+
+    if (pStack->IsOk())
+    {
+        cbotClass->m_IsDef = true; // complete definition
+        return cbotClass;
+    }
+    else return nullptr;
 }
 
 void CBotClass::Update(CBotVar* var, void* user)

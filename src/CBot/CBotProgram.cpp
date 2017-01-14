@@ -21,10 +21,10 @@
 
 #include "CBot/CBotExternalCall.h"
 #include "CBot/CBotStack.h"
-#include "CBot/CBotCStack.h"
 #include "CBot/CBotClass.h"
 #include "CBot/CBotUtils.h"
 #include "CBot/CBotFileUtils.h"
+#include "CBot/CBotParser.h"
 
 #include "CBot/CBotInstr/CBotFunction.h"
 
@@ -57,87 +57,95 @@ bool CBotProgram::Compile(const std::string& program, std::vector<std::string>& 
 {
     // Cleanup the previously compiled program
     Stop();
-
     Purge();
-
-    externFunctions.clear();
     m_error = CBotNoErr;
 
+    externFunctions.clear();
+
     // Step 1. Process the code into tokens
+
     auto tokens = CBotToken::CompileTokens(program);
     if (tokens == nullptr) return false;
+    CBotToken* p = tokens.get()->GetNext();                                // skips the first token (separator)
 
     auto pStack = std::unique_ptr<CBotCStack>(new CBotCStack(nullptr));
-    CBotToken* p = tokens.get()->GetNext();                 // skips the first token (separator)
+    pStack->SetProgram(this);                                              // defined used routines
 
-    pStack->SetProgram(this);                               // defined used routines
     m_externalCalls->SetUserPtr(pUser);
 
-    // Step 2. Find all function and class definitions
+    std::vector<CBotToken*> classesTokens = {};         // list contains first tokens of classes
+    std::vector<CBotToken*> functionsTokens = {};       // list contains first tokens of outside functions (that is not member of any class)
+
+    // Step 2. Precompile classes and outside functions
+
     while ( pStack->IsOk() && p != nullptr && p->GetType() != 0)
     {
         if ( IsOfType(p, ID_SEP) ) continue;                // semicolons lurking
 
-        int type = p->GetType();
-        if ( type == ID_CLASS ||
-             (( type == ID_PUBLIC || type == ID_PROTECTED || type == ID_PRIVATE) && p->GetNext()->GetType() == ID_CLASS ))
+        if (CBotParser::IsClass(p))
         {
-            CBotClass* newclass = CBotClass::Compile1(p, pStack.get());
+            classesTokens.push_back(p);
 
-            if (newclass != nullptr)
-                m_classes.push_back(newclass);
+            CBotParser::SkipClassOrFunction(p);
         }
         else
         {
-            CBotFunction* newfunc  = CBotFunction::Compile1(p, pStack.get(), nullptr);
-            if (newfunc != nullptr)
-                m_functions.push_back(newfunc);
+            functionsTokens.push_back(p);
+
+            CBotParser::SkipClassOrFunction(p);
         }
+    }
+
+    for (CBotToken* classToken : classesTokens)
+    {
+        CBotClass* newclass = CBotClass::Compile1(classToken, pStack.get());
+
+        if (HandleErrorIfExists(pStack.get())) return false;
+
+        m_classes.push_back(newclass);
+    }
+
+    for (CBotToken* functionToken : functionsTokens)
+    {
+        CBotFunction* newfunc  = CBotFunction::Compile1(functionToken, pStack.get(), nullptr);
+
+        if (HandleErrorIfExists(pStack.get())) return false;
+
+        m_functions.push_back(newfunc);
     }
 
     // Define fields and pre-compile methods for each class in this program
     if (pStack->IsOk()) CBotClass::DefineClasses(m_classes, pStack.get());
 
-    if ( !pStack->IsOk() )
-    {
-        m_error = pStack->GetError(m_errorStart, m_errorEnd);
-
-        Purge();
-
-        return false;
-    }
+    if (HandleErrorIfExists(pStack.get())) return false;
 
     // Step 3. Real compilation
-    std::list<CBotFunction*>::iterator next = m_functions.begin();
-    p  = tokens.get()->GetNext();                             // returns to the beginning
-    while ( pStack->IsOk() && p != nullptr && p->GetType() != 0 )
-    {
-        if ( IsOfType(p, ID_SEP) ) continue;                // semicolons lurking
 
-        int type = p->GetType();
-        if ( type == ID_CLASS ||
-             (( type == ID_PUBLIC || type == ID_PROTECTED || type == ID_PRIVATE) && p->GetNext()->GetType() == ID_CLASS ))
-        {
-            CBotClass::Compile(p, pStack.get());                  // completes the definition of the class
-        }
-        else
-        {
-            CBotFunction::Compile(p, pStack.get(), *next);
-            if ((*next)->IsExtern()) externFunctions.push_back((*next)->GetName()/* + next->GetParams()*/);
-            if ((*next)->IsPublic()) CBotFunction::AddPublic(*next);
-            (*next)->m_pProg = this;                           // keeps pointers to the module
-            ++next;
-        }
+    for (CBotToken* classToken : classesTokens)
+    {
+        CBotClass::Compile(classToken, pStack.get());
+
+        if (HandleErrorIfExists(pStack.get())) return false;
     }
 
-    if ( !pStack->IsOk() )
+    auto functionIter = m_functions.begin();
+
+    for (CBotToken* functionToken : functionsTokens)
     {
-        m_error = pStack->GetError(m_errorStart, m_errorEnd);
+        CBotFunction* function = *functionIter;
 
-        Purge();
+        CBotFunction::Compile(functionToken, pStack.get(), function);
 
-        return false;
+        if (HandleErrorIfExists(pStack.get())) return false;
+
+        if (function->IsExtern()) externFunctions.push_back(function->GetName());
+        if (function->IsPublic()) CBotFunction::AddPublic(function);
+        function->m_pProg = this;   // keeps pointers to the program
+
+        functionIter++;
     }
+
+    if (HandleErrorIfExists(pStack.get())) return false;
 
     return true;
 }
@@ -433,6 +441,19 @@ void CBotProgram::Free()
 CBotExternalCallList* CBotProgram::GetExternalCalls()
 {
     return m_externalCalls;
+}
+
+bool CBotProgram::HandleErrorIfExists(CBotCStack* stack)
+{
+    if (stack->IsOk()) return false;
+    else
+    {
+        m_error = stack->GetError(m_errorStart, m_errorEnd);
+
+        Purge();
+
+        return true;
+    }
 }
 
 } // namespace CBot

@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include "CBot/CBotCStack.h"
 #include "CBot/CBotTypResult.h"
 #include "CBot/CBotEnums.h"
 
@@ -358,6 +359,9 @@ public:
     static CBotExternalCallList* GetExternalCalls();
 
 private:
+
+    bool HandleErrorIfExists(CBotCStack* stack);
+
     //! All external calls
     static CBotExternalCallList* m_externalCalls;
     //! All user-defined functions

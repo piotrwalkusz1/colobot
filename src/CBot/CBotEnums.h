@@ -28,6 +28,19 @@ namespace CBot
 {
 
 /**
+ * \brief Protection level of classes, functions and variables
+ *
+ */
+enum ProtectionLevel
+{
+    None            = -1, //!< is not valid protection level, only for error returning
+    Public          = 0,
+    ReadOnly        = 1,  //!< read only (can't be set from CBot, only from the engine)
+    Protected       = 2,
+    Private         = 3
+};
+
+/**
  * \brief Defines known types. This types are modeled on Java types.
  *
  * Do not change the order of elements.
@@ -240,6 +253,8 @@ enum CBotError : int
     CBotErrNoPrivilege   = 5045, //!< missing public, protected or private
     CBotErrBadPrivilege  = 5046, //!< wrong privilege (e.g. class can't be protected)
     CBotErrNotClass      = 5047, //!< this class does not exist
+    CBotErrClassExpected = 5048, //!< expected class keyword
+    CBotErrClassNameExpected    = 5048, //!< expected name of class
 
     // Runtime errors
     CBotErrZeroDiv       = 6000, //!< division by zero

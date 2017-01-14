@@ -218,6 +218,13 @@ public:
     bool IsPublic();
 
     /*!
+     * \brief Get protection level taking into account protection level of containing class
+     * \return If containing class exists and has more restricted protection level, return this,
+     * otherwise, return protection level of function.
+     */
+    ProtectionLevel GetAbsoluteProtectionLevel();
+
+    /*!
      * \brief IsExtern
      * \return
      */
@@ -254,12 +261,12 @@ private:
     CBotToken m_retToken;
     //! Complete type of the result.
     CBotTypResult m_retTyp;
-    //! Public function.
-    bool m_bPublic;
+
+    ProtectionLevel m_protectionLevel;
     //! Extern function.
     bool m_bExtern;
     //! Class we are part of
-    CBotClass* m_MasterClass;
+    CBotClass* m_masterClass;
     //! Token of the class we are part of
     CBotToken m_classToken;
     CBotProgram* m_pProg;

@@ -136,21 +136,21 @@ std::string CBotFieldExpr::GetDebugData()
 
 ////////////////////////////////////////////////////////////////////////////////
 bool CBotFieldExpr::CheckProtectionError(CBotCStack* pStack, CBotVar* pPrev, CBotVar* pVar,
-                                         CBotVar::ProtectionLevel privat)
+                                         ProtectionLevel protectionLevel)
 {
-    CBotVar::ProtectionLevel varPriv = pVar->GetPrivate();
+    ProtectionLevel varPriv = pVar->GetProtectionLevel();
 
-    if (privat == CBotVar::ProtectionLevel::ReadOnly && varPriv == privat)
+    if (protectionLevel == ProtectionLevel::ReadOnly && varPriv == protectionLevel)
         return true;
 
-    if (varPriv == CBotVar::ProtectionLevel::Public) return false;
+    if (varPriv == ProtectionLevel::Public) return false;
 
     std::string prevName = (pPrev == nullptr) ? "" : pPrev->GetName();
 
     // implicit 'this.'var,  this.var,  or super.var
     if (pPrev == nullptr || prevName == "this" || prevName == "super") // member of the current class
     {
-        if (varPriv == CBotVar::ProtectionLevel::Private)  // var is private ?
+        if (varPriv == ProtectionLevel::Private)  // var is private ?
         {
             CBotToken  token("this");
             CBotVar*   pThis = pStack->FindVar(token);
@@ -179,7 +179,7 @@ bool CBotFieldExpr::CheckProtectionError(CBotCStack* pStack, CBotVar* pPrev, CBo
             if (!pClass->IsChildOf(pPrev->GetClass()))     // var is member of some other class ?
                 return true;
 
-            if (varPriv == CBotVar::ProtectionLevel::Private &&  // private member of a parent class
+            if (varPriv == ProtectionLevel::Private &&  // private member of a parent class
                 pClass != pPrev->GetClass()) return true;
         }
     }

@@ -113,11 +113,12 @@ public:
      * \param name
      * \param parent
      * \param bIntrinsic
+     * \param protectionLevel
      */
     CBotClass(const std::string& name,
               CBotClass* parent,
               bool bIntrinsic = false,
-              bool isPrivate = false);
+              ProtectionLevel protectionLevel = ProtectionLevel::Public);
 
     /*!
      * \brief CBotClass Destructor.
@@ -160,7 +161,7 @@ public:
      * \return
      */
     bool AddItem(std::string name, CBotTypResult type,
-                 CBotVar::ProtectionLevel mPrivate = CBotVar::ProtectionLevel::Public);
+                 ProtectionLevel protectionItem = ProtectionLevel::Public);
 
     /*!
      * \brief AddItem Adds an item by passing the pointer to an instance of a
@@ -327,9 +328,34 @@ public:
     bool IsIntrinsic();
 
     /*!
+     * \brief Check if class has public access modifier
+     * \return
+     */
+    bool IsPublic();
+
+    /*!
+    * \brief Check if class has more restricted protection level
+    * \return
+    * \section Example Example usage
+    * If class is private and parameter protectionLevel is equal public, function returns true
+    */
+    bool IsProtectionLevelMoreRestrictedThan(ProtectionLevel protectionLevel);
+
+    ProtectionLevel GetProtectionLevel();
+
+    /*!
      * \brief Purge
      */
     void Purge();
+
+    /*!
+     * \brief Check if class with this name can be defined in this program
+     * \name Name of class
+     * \program Program in that class will be defined
+     * \protectionLevel Protection level of class
+     * \return Return true if this name is already taken in this scope, otherwise, return false
+     */
+    static bool IsClassNameAlreadyTaken(const std::string& name, CBotProgram* program, ProtectionLevel protectionLevel);
 
     /*!
      * \brief Free
@@ -384,16 +410,17 @@ private:
     //! List of all public classes
     static std::set<CBotClass*> m_publicClasses;
 
+    static unsigned long m_nextItemId;
+
     //! true if this class is fully compiled, false if only precompiled
     bool m_IsDef;
     //! Name of this class
     std::string m_name;
     //! Parent class
     CBotClass* m_parent;
-    //! true if class is private
-    bool m_isPrivate;
-    //! Number of variables in the chain
-    int m_nbVar;
+
+    ProtectionLevel m_protectionLevel;
+
     //! Intrinsic class
     bool m_bIntrinsic;
     //! Linked list of all class fields

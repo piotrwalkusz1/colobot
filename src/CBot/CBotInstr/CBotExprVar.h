@@ -47,7 +47,7 @@ public:
      * \return
      */
     static CBotInstr* Compile(CBotToken*& p, CBotCStack* pStack,
-                              CBotVar::ProtectionLevel privat = CBotVar::ProtectionLevel::Protected);
+                              ProtectionLevel protectionLevel = ProtectionLevel::Protected);
 
     /*!
      * \brief CompileMethode

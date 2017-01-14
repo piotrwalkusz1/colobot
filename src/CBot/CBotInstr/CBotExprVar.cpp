@@ -44,7 +44,7 @@ CBotExprVar::~CBotExprVar()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-CBotInstr* CBotExprVar::Compile(CBotToken*& p, CBotCStack* pStack, CBotVar::ProtectionLevel privat)
+CBotInstr* CBotExprVar::Compile(CBotToken*& p, CBotCStack* pStack, ProtectionLevel protectionLevel)
 {
 //    CBotToken*    pDebut = p;
     CBotCStack* pStk = pStack->TokenStack();
@@ -67,7 +67,7 @@ CBotInstr* CBotExprVar::Compile(CBotToken*& p, CBotCStack* pStack, CBotVar::Prot
 
             if (ident > 0 && ident < 9000)
             {
-                if (CBotFieldExpr::CheckProtectionError(pStk, nullptr, var, privat))
+                if (CBotFieldExpr::CheckProtectionError(pStk, nullptr, var, protectionLevel))
                 {
                     pStk->SetError(CBotErrPrivate, p);
                     goto err;
@@ -137,7 +137,7 @@ CBotInstr* CBotExprVar::Compile(CBotToken*& p, CBotCStack* pStack, CBotVar::Prot
                                 if (var != nullptr)
                                 {
                                     i->SetUniqNum(var->GetUniqNum());
-                                    if (CBotFieldExpr::CheckProtectionError(pStk, preVar, var, privat))
+                                    if (CBotFieldExpr::CheckProtectionError(pStk, preVar, var, protectionLevel))
                                     {
                                         pStk->SetError(CBotErrPrivate, pp);
                                         goto err;

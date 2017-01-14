@@ -58,7 +58,7 @@ CBotVar::CBotVar( )
     m_binit = InitType::UNDEF;
     m_ident = 0;
     m_bStatic = false;
-    m_mPrivate = ProtectionLevel::Public;
+    m_protectionLevel = ProtectionLevel::Public;
 }
 
 CBotVar::CBotVar(const CBotToken &name) : CBotVar()
@@ -496,9 +496,9 @@ void CBotVar::SetStatic(bool bStatic)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void CBotVar::SetPrivate(ProtectionLevel mPrivate)
+void CBotVar::SetProtectionLevel(ProtectionLevel protectionLevel)
 {
-    m_mPrivate = mPrivate;
+    m_protectionLevel = protectionLevel;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -510,13 +510,13 @@ bool CBotVar::IsStatic()
 ////////////////////////////////////////////////////////////////////////////////
 bool CBotVar::IsPrivate(ProtectionLevel level)
 {
-    return static_cast<int>(m_mPrivate) >= static_cast<int>(level);
+    return static_cast<int>(m_protectionLevel) >= static_cast<int>(level);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-CBotVar::ProtectionLevel CBotVar::GetPrivate()
+ProtectionLevel CBotVar::GetProtectionLevel()
 {
-    return m_mPrivate;
+    return m_protectionLevel;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

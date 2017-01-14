@@ -74,11 +74,11 @@ public:
      * \param pStack Current compilation stack frame
      * \param pPrev Class instance which variable to check is part of, or nullptr if not part of a class
      * \param pVar Variable to check
-     * \param privat CBotVar::ProtectionLevel::ReadOnly if requesting read-only access, anything else otherwise
+     * \param protectionLevel ProtectionLevel::ReadOnly if requesting read-only access, anything else otherwise
      * \return true if pVar is inaccessible in the current context, false if access should be allowed
      */
     static bool CheckProtectionError(CBotCStack* pStack, CBotVar* pPrev, CBotVar* pVar,
-                                     CBotVar::ProtectionLevel privat = CBotVar::ProtectionLevel::Protected);
+                                     ProtectionLevel protectionLevel = ProtectionLevel::Protected);
 
 protected:
     virtual const std::string GetDebugName() override { return "CBotFieldExpr"; }

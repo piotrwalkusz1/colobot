@@ -60,7 +60,7 @@ CBotVarClass::CBotVarClass(const CBotToken& name, const CBotTypResult& type)
     m_pParent    = nullptr;
     m_binit        = InitType::UNDEF;
     m_bStatic    = false;
-    m_mPrivate    = ProtectionLevel::Public;
+    m_protectionLevel    = ProtectionLevel::Public;
     m_bConstructor = false;
     m_CptUse    = 0;
     m_ItemIdent = type.Eq(CBotTypIntrinsic) ? 0 : CBotVar::NextUniqNum();
@@ -192,7 +192,7 @@ void CBotVarClass::SetClass(CBotClass* pClass)//, int &nIdent)
 
         CBotVar*    pn = CBotVar::Create( pv );        // a copy
         pn->SetStatic(pv->IsStatic());
-        pn->SetPrivate(pv->GetPrivate());
+        pn->SetProtectionLevel(pv->GetProtectionLevel());
 
         if ( pv->m_InitExpr != nullptr )                // expression for initialization?
         {
